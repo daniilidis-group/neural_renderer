@@ -1,1 +1,1 @@
-from .load_textures import LoadTextures
+from .load_textures import LoadTexturesFunction

@@ -4,7 +4,7 @@ from .lighting import lighting
 from .load_obj import load_obj
 from .look import look
 from .look_at import look_at
-# from mesh import Mesh
+from .mesh import Mesh
 # from optimizers import Adam
 from .perspective import perspective
 # from rasterize import (

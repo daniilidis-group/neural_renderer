@@ -5,7 +5,7 @@ import torch
 import numpy as np
 import skimage.io
 
-from .cuda import LoadTextures
+from .cuda import LoadTexturesFunction
 
 def load_mtl(filename_mtl):
     # load color (Kd) and filename of textures from *.mtl
@@ -83,7 +83,7 @@ def load_textures(filename_obj, filename_mtl, texture_size):
                 textures[i, :, :, :, :] = color[None, None, None, :]
 
     #
-    load_textures = LoadTextures()
+    load_textures = LoadTexturesFunction.apply
     for material_name, filename_texture in texture_filenames.items():
         filename_texture = os.path.join(os.path.dirname(filename_obj), filename_texture)
         image = skimage.io.imread(filename_texture).astype(np.float32) / 255.

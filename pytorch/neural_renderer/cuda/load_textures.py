@@ -19,9 +19,3 @@ class LoadTexturesFunction(Function):
         # argument order is swapped to follow the standard cuda conventions
         textures = load_textures.forward(image, faces, is_update, textures)
         return textures
-
-class LoadTextures(nn.Module):
-
-    def forward(self, image, faces, textures, is_update):
-        return LoadTexturesFunction.apply(image, faces, textures, is_update)
-
