@@ -6,7 +6,7 @@ from .look import look
 from .look_at import look_at
 # from mesh import Mesh
 # from optimizers import Adam
-# from perspective import perspective
+from .perspective import Perspective
 # from rasterize import (
 #     rasterize_rgbad, rasterize, rasterize_silhouettes, rasterize_depth, use_unsafe_rasterizer, Rasterize)
 # from renderer import Renderer
