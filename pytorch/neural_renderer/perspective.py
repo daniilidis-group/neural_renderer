@@ -1,10 +1,7 @@
 import torch
-import torch.nn as nn
 import math
 
-class Perspective(nn.Module):
-
-    def forward(self, vertices, angle=30.):
+def perspective(vertices, angle=30.):
         assert(vertices.ndimension() == 3)
         device = vertices.device
         angle = torch.tensor(angle / 180 * math.pi).to(device)

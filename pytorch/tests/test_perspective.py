@@ -10,8 +10,7 @@ class TestPerspective(unittest.TestCase):
         vertices = torch.from_numpy(np.array([1,2,10], np.float32))
         v_out = np.array([np.sqrt(3) / 10, 2 * np.sqrt(3) / 10, 10], np.float32)
         vertices = vertices[None, None, :]
-        perspective = neural_renderer.Perspective()
-        transformer = perspective(vertices)
+        transformer = neural_renderer.perspective(vertices)
         print(transformer)
         print(v_out)
         assert(np.allclose(transformer.data.squeeze().numpy(), v_out))
