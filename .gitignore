@@ -1,6 +1,7 @@
 .idea
 *~
 *.pyc
+*.swp
 UNKNOWN.egg-info
 .DS_Store
 
