@@ -7,10 +7,11 @@ import os
 dir_path = os.path.dirname(os.path.realpath(__file__))
 print(dir_path)
 
+cuda_cflags = ['-arch=sm_60', '-gencode=arch=compute_60,code=sm_60', '-gencode=arch=compute_70,code=sm_70']
 rasterize = load(
         'rasterize', [os.path.join(dir_path,'rasterize_cuda.cpp'),
                           os.path.join(dir_path, 'rasterize_cuda_kernel.cu')],
-        verbose=True, extra_cuda_cflags=['-arch=sm_60', '-gencode=arch=compute_60,code=sm_60'])
+        verbose=True, extra_cuda_cflags=cuda_cflags)
 help(rasterize)
 
 class RasterizeFunction(Function):
