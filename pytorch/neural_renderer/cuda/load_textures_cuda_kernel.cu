@@ -3,6 +3,7 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 
+namespace{
 template <typename scalar_t>
 __global__ void load_textures_cuda_forward_kernel(
     const scalar_t* __restrict__ image,
@@ -54,6 +55,7 @@ __global__ void load_textures_cuda_forward_kernel(
           texture[k] = image[(pos_yi * image_width + pos_xi) * 3 + k];
       }
   }
+}
 }
 
 at::Tensor load_textures_cuda_forward(

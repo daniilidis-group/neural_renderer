@@ -20,124 +20,126 @@ __device__ double atomicExch(double* address, double val) {
     return __longlong_as_double(old);
 }
 
+namespace{
 template <typename scalar_t>
 __global__ void forward_face_index_map_cuda_kernel(
-        scalar_t* __restrict__ faces,
+        const scalar_t* __restrict__ faces,
         int32_t* __restrict__ face_index_map,
         scalar_t* __restrict__ weight_map,
         scalar_t* __restrict__ depth_map,
         scalar_t* __restrict__ face_inv_map,
         int32_t* __restrict__ lock,
-        int64_t num_faces,
+        size_t num_faces,
         int image_size,
         scalar_t near,
         scalar_t far,
         int return_rgb,
         int return_alpha,
         int return_depth) {
-     /* batch number, face, number, image size, face[v012][RGB] */
-     const int i = blockIdx.x * blockDim.x + threadIdx.x;
-     const int bn = i / num_faces;
-     const int fn = i % num_faces;
-     const int is = image_size;
-     const scalar_t* face = &faces[i * 9];
-     
-     /* return if backside */
-     if ((face[7] - face[1]) * (face[3] - face[0]) < (face[4] - face[1]) * (face[6] - face[0]))
-         return;
-     
-     /* pi[0], pi[1], pi[2] = leftmost, middle, rightmost points */
-     int pi[3];
-     if (face[0] < face[3]) {
-         if (face[6] < face[0]) pi[0] = 2; else pi[0] = 0;
-         if (face[3] < face[6]) pi[2] = 2; else pi[2] = 1;
-     } else {
-         if (face[6] < face[3]) pi[0] = 2; else pi[0] = 1;
-         if (face[0] < face[6]) pi[2] = 2; else pi[2] = 0;
-     }
-     for (int k = 0; k < 3; k++) if (pi[0] != k && pi[2] != k) pi[1] = k;
-     
-     /* p[num][xyz]: x, y is normalized from [-1, 1] to [0, is - 1]. */
-     scalar_t p[3][3];
-     for (int num = 0; num < 3; num++) {
-         for (int dim = 0; dim < 3; dim++) {
-             if (dim != 2) {
-                 p[num][dim] = 0.5 * (face[3 * pi[num] + dim] * is + is - 1);
-             } else {
-                 p[num][dim] = face[3 * pi[num] + dim];
-             }
-         }
-     }
-     if (p[0][0] == p[2][0])
-         return; // line, not triangle 
-     
-     /* compute face_inv */
-     scalar_t face_inv[9] = {
-         p[1][1] - p[2][1], p[2][0] - p[1][0], p[1][0] * p[2][1] - p[2][0] * p[1][1],
-         p[2][1] - p[0][1], p[0][0] - p[2][0], p[2][0] * p[0][1] - p[0][0] * p[2][1],
-         p[0][1] - p[1][1], p[1][0] - p[0][0], p[0][0] * p[1][1] - p[1][0] * p[0][1]};
-     scalar_t face_inv_denominator = (
-         p[2][0] * (p[0][1] - p[1][1]) +
-         p[0][0] * (p[1][1] - p[2][1]) +
-         p[1][0] * (p[2][1] - p[0][1]));
-     for (int k = 0; k < 9; k++)
-         face_inv[k] /= face_inv_denominator;
-     
-     /* from left to right */
-     const int xi_min = max(ceil(p[0][0]), 0.);
-     const int xi_max = min(p[2][0], is - 1.);
-     for (int xi = xi_min; xi <= xi_max; xi++) {
-         /* compute yi_min and yi_max */
-         scalar_t yi1, yi2;
-         if (xi <= p[1][0]) {
-             if (p[1][0] - p[0][0] != 0) {
-                 yi1 = (p[1][1] - p[0][1]) / (p[1][0] - p[0][0]) * (xi - p[0][0]) + p[0][1];
-             }
-             else {
-                 yi1 = p[1][1];
-             }
-         }
-         else {
-             if (p[2][0] - p[1][0] != 0) {
-                 yi1 = (p[2][1] - p[1][1]) / (p[2][0] - p[1][0]) * (xi - p[1][0]) + p[1][1];
-             }
-             else {
-                 yi1 = p[1][1];
-             }
-         }
-         yi2 = (p[2][1] - p[0][1]) / (p[2][0] - p[0][0]) * (xi - p[0][0]) + p[0][1];
-     
-         /* from up to bottom */
-         int yi_min = max(0., ceil(min(yi1, yi2)));
-         int yi_max = min(max(yi1, yi2), is - 1.);
-         for (int yi = yi_min; yi <= yi_max; yi++) {
-             /* index in output buffers */
-             int index = bn * is * is + yi * is + xi;
-     
-             /* compute w = face_inv * p */
-             scalar_t w[3];
-             for (int k = 0; k < 3; k++)
-                 w[k] = face_inv[3 * k + 0] * xi + face_inv[3 * k + 1] * yi + face_inv[3 * k + 2];
-     
-             /* sum(w) -> 1, 0 < w < 1 */
-             scalar_t w_sum = 0;
-             for (int k = 0; k < 3; k++) {
-                 w[k] = min(max(w[k], 0.), 1.);
-                 w_sum += w[k];
-             }
-             for (int k = 0; k < 3; k++) w[k] /= w_sum;
-     
-             /* compute 1 / zp = sum(w / z) */
-             const scalar_t zp = 1. / (w[0] / p[0][2] + w[1] / p[1][2] + w[2] / p[2][2]);
-             if (zp <= near || far <= zp)
-                 continue;
-     
-             /* lock and update */
-             bool locked = false;
-             do {
-                 if (locked = atomicCAS(&lock[index], 0, 1) == 0) {
-                     if (zp < atomicAdd(&depth_map[index], 0)) {
-                         float record = 0;
+    /* batch number, face, number, image size, face[v012][RGB] */
+    const int i = blockIdx.x * blockDim.x + threadIdx.x;
+    const int bn = i / num_faces;
+    const int fn = i % num_faces;
+    const int is = image_size;
+    const scalar_t* face = &faces[i * 9];
+    
+    /* return if backside */
+    if ((face[7] - face[1]) * (face[3] - face[0]) < (face[4] - face[1]) * (face[6] - face[0]))
+        return;
+    
+    /* pi[0], pi[1], pi[2] = leftmost, middle, rightmost points */
+    int pi[3];
+    if (face[0] < face[3]) {
+        if (face[6] < face[0]) pi[0] = 2; else pi[0] = 0;
+        if (face[3] < face[6]) pi[2] = 2; else pi[2] = 1;
+    } else {
+        if (face[6] < face[3]) pi[0] = 2; else pi[0] = 1;
+        if (face[0] < face[6]) pi[2] = 2; else pi[2] = 0;
+    }
+    for (int k = 0; k < 3; k++) if (pi[0] != k && pi[2] != k) pi[1] = k;
+    
+    /* p[num][xyz]: x, y is normalized from [-1, 1] to [0, is - 1]. */
+    scalar_t p[3][3];
+    for (int num = 0; num < 3; num++) {
+        for (int dim = 0; dim < 3; dim++) {
+            if (dim != 2) {
+                p[num][dim] = 0.5 * (face[3 * pi[num] + dim] * is + is - 1);
+            } else {
+                p[num][dim] = face[3 * pi[num] + dim];
+            }
+        }
+    }
+    if (p[0][0] == p[2][0])
+        return; // line, not triangle 
+    
+    /* compute face_inv */
+    scalar_t face_inv[9] = {
+        p[1][1] - p[2][1], p[2][0] - p[1][0], p[1][0] * p[2][1] - p[2][0] * p[1][1],
+        p[2][1] - p[0][1], p[0][0] - p[2][0], p[2][0] * p[0][1] - p[0][0] * p[2][1],
+        p[0][1] - p[1][1], p[1][0] - p[0][0], p[0][0] * p[1][1] - p[1][0] * p[0][1]};
+    scalar_t face_inv_denominator = (
+        p[2][0] * (p[0][1] - p[1][1]) +
+        p[0][0] * (p[1][1] - p[2][1]) +
+        p[1][0] * (p[2][1] - p[0][1]));
+    for (int k = 0; k < 9; k++)
+        face_inv[k] /= face_inv_denominator;
+    
+    /* from left to right */
+    const int xi_min = max(ceil(p[0][0]), 0.);
+    const int xi_max = min(p[2][0], is - 1.);
+    for (int xi = xi_min; xi <= xi_max; xi++) {
+        /* compute yi_min and yi_max */
+        scalar_t yi1, yi2;
+        if (xi <= p[1][0]) {
+            if (p[1][0] - p[0][0] != 0) {
+                yi1 = (p[1][1] - p[0][1]) / (p[1][0] - p[0][0]) * (xi - p[0][0]) + p[0][1];
+            }
+            else {
+                yi1 = p[1][1];
+            }
+        }
+        else {
+            if (p[2][0] - p[1][0] != 0) {
+                yi1 = (p[2][1] - p[1][1]) / (p[2][0] - p[1][0]) * (xi - p[1][0]) + p[1][1];
+            }
+            else {
+                yi1 = p[1][1];
+            }
+        }
+        yi2 = (p[2][1] - p[0][1]) / (p[2][0] - p[0][0]) * (xi - p[0][0]) + p[0][1];
+    
+        /* from up to bottom */
+        int yi_min = max(0., ceil(min(yi1, yi2)));
+        int yi_max = min(max(yi1, yi2), is - 1.);
+        for (int yi = yi_min; yi <= yi_max; yi++) {
+            /* index in output buffers */
+            int index = bn * is * is + yi * is + xi;
+    
+            /* compute w = face_inv * p */
+            scalar_t w[3];
+            for (int k = 0; k < 3; k++)
+                w[k] = face_inv[3 * k + 0] * xi + face_inv[3 * k + 1] * yi + face_inv[3 * k + 2];
+    
+            /* sum(w) -> 1, 0 < w < 1 */
+            scalar_t w_sum = 0;
+            for (int k = 0; k < 3; k++) {
+                w[k] = min(max(w[k], 0.), 1.);
+                w_sum += w[k];
+            }
+            for (int k = 0; k < 3; k++)
+                w[k] /= w_sum;
+    
+            /* compute 1 / zp = sum(w / z) */
+            const scalar_t zp = 1. / (w[0] / p[0][2] + w[1] / p[1][2] + w[2] / p[2][2]);
+            if (zp <= near || far <= zp)
+                continue;
+    
+            /* lock and update */
+            bool locked = false;
+            do {
+                if (locked = atomicCAS(&lock[index], 0, 1) == 0) {
+                    if (zp < atomicAdd(&depth_map[index], 0)) {
+                         size_t record = 0;
                          atomicExch(&depth_map[index], zp);
                          atomicExch(&face_index_map[index], fn);
                          for (int k = 0; k < 3; k++)
@@ -150,15 +152,15 @@ __global__ void forward_face_index_map_cuda_kernel(
                          }
                          record += atomicAdd(&depth_map[index], 0.);
                          record += atomicAdd(&face_index_map[index], 0.);
-                         if (0 < record) atomicExch(&lock[index], 0);
-                     }
-                     else {
-                         atomicExch(&lock[index], 0);
-                     }
-                 }
-             } while (!locked);
-         }
-     }
+                         if (0. < record) atomicExch(&lock[index], 0);
+                    }
+                    else {
+                        atomicExch(&lock[index], 0);
+                    }
+                }
+            } while (!locked);
+        }
+    }
 }
 
 template <typename scalar_t>
@@ -566,6 +568,7 @@ __global__ void backward_depth_map_cuda_kernel(
             }
         }
     }
+}
 }
 
 std::vector<at::Tensor> forward_face_index_map_cuda(
