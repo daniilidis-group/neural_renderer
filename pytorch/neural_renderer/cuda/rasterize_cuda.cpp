@@ -27,7 +27,6 @@ std::vector<at::Tensor> forward_texture_sampling_cuda(
         at::Tensor rgb_map,
         at::Tensor sampling_index_map,
         at::Tensor sampling_weight_map,
-        at::Tensor lock,
         int image_size,
         float eps);
 
@@ -93,14 +92,13 @@ std::vector<at::Tensor> forward_texture_sampling(
         at::Tensor rgb_map,
         at::Tensor sampling_index_map,
         at::Tensor sampling_weight_map,
-        at::Tensor lock,
         int image_size,
         int texture_size,
         float eps) {
 
     return forward_texture_sampling_cuda(faces, textures, face_index_map,
                                     weight_map, depth_map, rgb_map,
-                                    sampling_index_map, sampling_weight_map, lock,
+                                    sampling_index_map, sampling_weight_map,
                                     image_size, eps);
 }
 

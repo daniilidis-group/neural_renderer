@@ -173,7 +173,6 @@ __global__ void forward_texture_sampling_cuda_kernel(
 		scalar_t* __restrict__ rgb_map,
 		int32_t* __restrict__ sampling_index_map,
         scalar_t* __restrict__ sampling_weight_map,
-        int32_t* __restrict__ lock,
         int num_faces,
         int image_size,
         int texture_size,
@@ -618,7 +617,6 @@ std::vector<at::Tensor> forward_texture_sampling_cuda(
         at::Tensor rgb_map,
         at::Tensor sampling_index_map,
         at::Tensor sampling_weight_map,
-        at::Tensor lock,
         int image_size,
         float eps) {
 
@@ -638,7 +636,6 @@ std::vector<at::Tensor> forward_texture_sampling_cuda(
           rgb_map.data<scalar_t>(),
 		  sampling_index_map.data<int32_t>(),
 		  sampling_weight_map.data<scalar_t>(),
-          lock.data<int32_t>(),
 		  num_faces,
           image_size,
           texture_size,
