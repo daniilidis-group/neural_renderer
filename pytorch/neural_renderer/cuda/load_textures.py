@@ -13,7 +13,7 @@ help(load_textures)
 class LoadTexturesFunction(Function):
 
     @staticmethod
-    def forward(ctx, vertices, textures):
+    def forward(ctx, image, faces, textures, is_update):
         # argument order is swapped to follow the standard cuda conventions
         textures = load_textures.forward(image, faces, is_update, textures)
         return textures

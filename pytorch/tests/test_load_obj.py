@@ -2,7 +2,7 @@ import unittest
 
 import torch
 import numpy as np
-import scipy.misc
+from skimage.io import imsave
 
 import neural_renderer
 
@@ -37,7 +37,7 @@ class TestCore(unittest.TestCase):
         assert (vertices.shape[0] == 1292)
 
     def test_texture(self):
-        # renderer = neural_renderer.Renderer()
+        renderer = neural_renderer.Renderer()
 
         vertices, faces, textures = neural_renderer.load_obj(
             '../../chainer/tests/data/1cde62b063e14777c9152a706245d48/model.obj', load_texture=True)
@@ -45,18 +45,19 @@ class TestCore(unittest.TestCase):
         # vertices = chainer.cuda.to_gpu(vertices)
         # faces = chainer.cuda.to_gpu(faces)
         # textures = chainer.cuda.to_gpu(textures)
-        # renderer.eye = neural_renderer.get_points_from_angles(2, 15, 30)
-        # images = renderer.render(vertices[None, :, :], faces[None, :, :], textures[None, :, :, :, :, :]).data.get()
-        # scipy.misc.imsave('../chainer/tests/data/car.png', scipy.misc.toimage(images[0]))
+        renderer.eye = neural_renderer.get_points_from_angles(2, 15, 30)
+        images = renderer.render(vertices[None, :, :], faces[None, :, :], textures[None, :, :, :, :, :]).permute(0,2,3,1).detach().cpu().numpy()
+        # scipy.misc.imsave('car.png', scipy.misc.toimage(images[0]))
+        imsave('car.png', images[0])
 
         vertices, faces, textures = neural_renderer.load_obj(
             '../../chainer/tests/data/4e49873292196f02574b5684eaec43e9/model.obj', load_texture=True, texture_size=16)
         # vertices = chainer.cuda.to_gpu(vertices)
         # faces = chainer.cuda.to_gpu(faces)
         # textures = chainer.cuda.to_gpu(textures)
-        # renderer.eye = neural_renderer.get_points_from_angles(2, 15, -90)
-        # images = renderer.render(vertices[None, :, :], faces[None, :, :], textures[None, :, :, :, :, :]).data.get()
-        # scipy.misc.imsave('./tests/data/display.png', scipy.misc.toimage(images[0]))
+        renderer.eye = neural_renderer.get_points_from_angles(2, 15, -90)
+        images = renderer.render(vertices[None, :, :], faces[None, :, :], textures[None, :, :, :, :, :]).permute(0,2,3,1).detach().cpu().numpy()
+        imsave('display.png', images[0])
 
 
 if __name__ == '__main__':

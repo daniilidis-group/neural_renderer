@@ -19,9 +19,9 @@ class CreateTextureImageFunction(Function):
         num_faces, texture_size_in = textures.shape[:2]
         tile_width = int((num_faces - 1.) ** 0.5) + 1
         tile_height = int((num_faces - 1.) / tile_width) + 1
-        image = torch.zeros(tile_height * texture_size_out, tile_width * texture_size_out, 3, dtype=np.float32)
-        vertices = np.zeros((num_faces, 3, 2), dtype=np.float32)  # [:, :, XY]
-        face_nums = np.arange(num_faces)
+        image = torch.zeros(tile_height * texture_size_out, tile_width * texture_size_out, 3, dtype=torch.float32)
+        vertices = torch.zeros((num_faces, 3, 2), dtype=torch.float32)  # [:, :, XY]
+        face_nums = torch.arange(num_faces)
         column = face_nums % tile_width
         row = face_nums / tile_width
         vertices[:, 0, 0] = column * texture_size_out

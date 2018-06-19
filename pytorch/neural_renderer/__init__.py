@@ -9,7 +9,7 @@ from .perspective import perspective
 from .rasterize import (
     rasterize_rgbad, rasterize, rasterize_silhouettes, rasterize_depth, Rasterize)
 from .renderer import Renderer
-# from save_obj import save_obj
+from .save_obj import save_obj
 from .vertices_to_faces import vertices_to_faces
 
 # __version__ = '1.1.3'
