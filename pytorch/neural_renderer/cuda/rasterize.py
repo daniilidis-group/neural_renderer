@@ -94,47 +94,57 @@ class RasterizeFunction(Function):
 
     @staticmethod
     def backward(ctx, grad_rgb_map, grad_alpha_map, grad_depth_map):
+        faces, textures, face_index_map, weight_map,\
+        depth_map, rgb_map, alpha_map, face_inv_map,\
+        sampling_index_map, sampling_weight_map = \
+                ctx.saved_tensors
         # initialize output buffers
-        ctx.grad_faces = torch.zeros_like(ctx.faces, dtype=torch.float32).to(ctx.device).contiguous()
+        grad_faces = torch.zeros_like(faces, dtype=torch.float32).to(ctx.device).contiguous()
         if ctx.return_rgb:
-            ctx.grad_textures = torch.zeros_like(ctx.faces, dtype=torch.float32).to(ctx.device).contiguous()
+            grad_textures = torch.zeros_like(faces, dtype=torch.float32).to(ctx.device).contiguous()
         else:
-            ctx.grad_textures = torch.zeros(1, dtype=torch.float32).to(ctx.device)
+            grad_textures = torch.zeros(1, dtype=torch.float32).to(ctx.device)
         
         # get grad_outputs
         if ctx.return_rgb:
             if grad_rgb_map is not None:
-                ctx.grad_rgb_map = grad_rgb_map.contiguous()
+                grad_rgb_map = grad_rgb_map.contiguous()
             else:
-                ctx.grad_rgb_map = torch.zeros_like(ctx.rgb_map)
+                grad_rgb_map = torch.zeros_like(rgb_map)
         else:
             ctx.grad_rgb_map = torch.zeros(1, dtype=torch.float32)
         if ctx.return_alpha:
             if grad_alpha_map is not None:
-                ctx.grad_alpha_map = grad_alpha_map.clone()
+                grad_alpha_map = grad_alpha_map.clone()
             else:
-                ctx.grad_alpha_map = torch.zeros_like(ctx.alpha_map)
+                grad_alpha_map = torch.zeros_like(alpha_map)
         else:
-            ctx.grad_alpha_map = torch.zeros(1, dtype=torch.float32)
+            grad_alpha_map = torch.zeros(1, dtype=torch.float32)
         if ctx.return_depth:
             if grad_depth_map is not None:
-                ctx.grad_depth_map = grad_depth_map.contiguous()
+                grad_depth_map = grad_depth_map.contiguous()
             else:
-                ctx.grad_depth_map = torch.zeros_like(ctx.depth_map)
+                grad_depth_map = torch.zeros_like(ctx.depth_map)
         else:
-            torch.grad_depth_map = torch.zeros(1, dtype=torch.float32)
+            grad_depth_map = torch.zeros(1, dtype=torch.float32)
 
         # backward pass
-        ctx.grad_faces = RasterizeFunction.backward_pixel_map(ctx)
-        ctx.grad_textures = RasterizeFunction.backward_textures(ctx)
-        ctx.grad_faces = RasterizeFunction.backward_depth_map(ctx)
+        grad_faces = RasterizeFunction.backward_pixel_map(
+                                        ctx, faces, face_index_map, rgb_map,
+                                        alpha_map, grad_rgb_map, grad_alpha_map,
+                                        grad_faces)
+        grad_textures = RasterizeFunction.backward_textures(
+                                        ctx, face_index_map, sampling_weight_map,
+                                        sampling_index_map, grad_rgb_map, grad_textures)
+        grad_faces = RasterizeFunction.backward_depth_map(
+                                        ctx, faces, depth_map, face_index_map,
+                                        face_inv_map, weight_map, grad_depth_map,
+                                        grad_faces)
 
-        # return
-        # if len(ctx.inputs) == 1:
-        #     return ctx.grad_faces
-        # else:
-        #     return ctx.grad_faces, ctx.grad_textures
-        return ctx.grad_faces, ctx.grad_textures
+        if not textures.requires_grad:
+            grad_textures = None
+
+        return grad_faces, grad_textures, None, None, None, None, None, None, None, None
 
     @staticmethod
     def forward_face_index_map(ctx, faces, face_index_map, weight_map, 
@@ -151,54 +161,60 @@ class RasterizeFunction(Function):
                                  weight_map, depth_map, rgb_map,
                                  sampling_index_map, sampling_weight_map):
         if not ctx.return_rgb:
-            return
-        return rasterize_cuda.forward_texture_sampling(faces, textures, face_index_map,
+            return rgb_map, sampling_index_map, sampling_weight_map
+        else:
+            return rasterize_cuda.forward_texture_sampling(faces, textures, face_index_map,
                                            weight_map, depth_map, rgb_map,
                                            sampling_index_map, sampling_weight_map,
                                            ctx.image_size, ctx.eps)
 
     @staticmethod
     def forward_alpha_map(ctx, alpha_map, face_index_map):
-        if not ctx.return_alpha:
-            return
-        alpha_map[face_index_map >= 0] = 1
+        if ctx.return_alpha:
+            alpha_map[face_index_map >= 0] = 1
         return alpha_map
 
     @staticmethod
     def forward_background(ctx, face_index_map, rgb_map):
-        if not ctx.return_rgb:
-            return
-        background_color = torch.tensor(ctx.background_color, dtype=torch.float32).to(ctx.device)
-        mask = (face_index_map >= 0).float()[:, :, :, None]
-        if background_color.ndimension() == 1:
-            rgb_map = rgb_map * mask + (1-mask) * background_color[None, None, None, :]
-        elif background_color.ndimension() == 2:
-            rgb_map = rgb_map * mask + (1-mask) * background_color[:, None, None, :]
+        if ctx.return_rgb:
+            background_color = torch.tensor(ctx.background_color, dtype=torch.float32).to(ctx.device)
+            mask = (face_index_map >= 0).float()[:, :, :, None]
+            if background_color.ndimension() == 1:
+                rgb_map = rgb_map * mask + (1-mask) * background_color[None, None, None, :]
+            elif background_color.ndimension() == 2:
+                rgb_map = rgb_map * mask + (1-mask) * background_color[:, None, None, :]
         return rgb_map
 
     @staticmethod
-    def backward_pixel_map(ctx):
+    def backward_pixel_map(ctx, faces, face_index_map, rgb_map,
+                           alpha_map, grad_rgb_map, grad_alpha_map, grad_faces):
         if (not ctx.return_rgb) and (not ctx.return_alpha):
-            return
-        rasterize_cuda.backward_pixel_map(ctx.faces, ctx.face_index_map, ctx.rgb_map,
-                                     ctx.alpha_map, ctx.grad_rgb_map, ctx.grad_alpha_map,
-                                     ctx.grad_faces, ctx.image_size, ctx.eps, ctx.return_rgb,
+            return grad_faces
+        else:
+            return rasterize_cuda.backward_pixel_map(faces, face_index_map, rgb_map,
+                                     alpha_map, grad_rgb_map, grad_alpha_map,
+                                     grad_faces, ctx.image_size, ctx.eps, ctx.return_rgb,
                                      ctx.return_alpha)
 
     @staticmethod
-    def backward_textures(ctx):
+    def backward_textures(ctx, face_index_map, sampling_weight_map,
+                          sampling_index_map, grad_rgb_map, grad_textures):
         if not ctx.return_rgb:
-            return
-        rasterize_cuda.backward_textures(ctx.face_index_map, ctx.sampling_weight_map, ctx.sampling_index_map,
-                                    ctx.grad_rgb_map, ctx.grad_textures, ctx.num_faces)
+            return grad_textures
+        else:
+            return rasterize_cuda.backward_textures(face_index_map, sampling_weight_map,
+                                                    sampling_index_map, grad_rgb_map,
+                                                    grad_textures, ctx.num_faces)
 
     @staticmethod
-    def backward_depth_map(ctx):
+    def backward_depth_map(ctx, faces, depth_map, face_index_map,
+                           face_inv_map, weight_map, grad_depth_map, grad_faces):
         if not ctx.return_depth:
-            return
-        rasterize_cuda.backward_depth_map(ctx.faces, ctx.depth_map, ctx.face_index_map,
-                                     ctx.face_inv_map, ctx.weight_map,
-                                     ctx.grad_depth_map, ctx.grad_faces, ctx.image_size)
+            return grad_faces
+        else:
+            return rasterize_cuda.backward_depth_map(faces, depth_map, face_index_map,
+                                     face_inv_map, weight_map,
+                                     grad_depth_map, grad_faces, ctx.image_size)
 
 class Rasterize(nn.Module):
     

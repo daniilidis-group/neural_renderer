@@ -72,7 +72,7 @@ def rasterize_rgbad(
         alpha = alpha[:, list(reversed(range(alpha.shape[1]))), :]
     if return_depth:
         # depth = depth[:, ::-1, :]
-        depth = depth[:, list(reversed(range(alpha.depth[1]))), :]
+        depth = depth[:, list(reversed(range(depth.shape[1]))), :]
 
     if anti_aliasing:
         # 0.5x down-sampling
