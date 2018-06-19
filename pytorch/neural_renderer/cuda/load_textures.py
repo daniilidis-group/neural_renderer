@@ -1,5 +1,3 @@
-import torch
-from torch import nn
 from torch.autograd import Function
 from torch.utils.cpp_extension import load
 
@@ -15,7 +13,7 @@ help(load_textures)
 class LoadTexturesFunction(Function):
 
     @staticmethod
-    def forward(ctx, image, faces, textures, is_update):
+    def forward(ctx, vertices, textures):
         # argument order is swapped to follow the standard cuda conventions
         textures = load_textures.forward(image, faces, is_update, textures)
         return textures

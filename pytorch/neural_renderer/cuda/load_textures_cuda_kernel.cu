@@ -3,7 +3,7 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 
-namespace{
+namespace {
 template <typename scalar_t>
 __global__ void load_textures_cuda_forward_kernel(
     const scalar_t* __restrict__ image,
@@ -14,6 +14,9 @@ __global__ void load_textures_cuda_forward_kernel(
     size_t image_height,
     size_t image_width) {
   const int i = blockIdx.x * blockDim.x + threadIdx.x;
+  if (i >= texture_size / 3) {
+      return;
+  }
   const int ts = texture_size;
   const int fn = i / (ts * ts * ts);
   scalar_t dim0 = ((i / (ts * ts)) % ts) / (ts - 1.) ;
@@ -68,7 +71,7 @@ at::Tensor load_textures_cuda_forward(
     const auto image_width = image.size(1);
     
     const int threads = 1024;
-    const dim3 blocks(texture_size/3);
+    const int blocks = (texture_size / 3 - 1) / threads + 1;
 
     AT_DISPATCH_FLOATING_TYPES(image.type(), "load_textures_cuda_forward", ([&] {
       load_textures_cuda_forward_kernel<scalar_t><<<blocks, threads>>>(
@@ -80,5 +83,9 @@ at::Tensor load_textures_cuda_forward(
           image_height,
           image_width);
       }));
-    return {textures};
+
+    cudaError_t err = cudaGetLastError();
+    if (err != cudaSuccess) 
+            printf("Error in load_textures: %s\n", cudaGetErrorString(err));
+    return textures;
 }
