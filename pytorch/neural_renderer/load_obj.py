@@ -69,8 +69,8 @@ def get_textures(filename_obj, filename_mtl, texture_size):
     #
     colors, texture_filenames = load_mtl(filename_mtl)
 
-    textures = np.zeros((faces.shape[0], texture_size, texture_size, texture_size, 3), np.float32) + 0.5
-    textures = torch.from_numpy(textures).cuda()
+    textures = torch.zeros(faces.shape[0], texture_size, texture_size, texture_size, 3, dtype=torch.float32) + 0.5
+    textures = textures.cuda()
 
     #
     for material_name, color in colors.items():
@@ -88,6 +88,8 @@ def get_textures(filename_obj, filename_mtl, texture_size):
         image = torch.from_numpy(image.copy()).cuda()
         is_update = (np.array(material_names) == material_name).astype(np.int32)
         is_update = torch.from_numpy(is_update).cuda()
+        from IPython.core.debugger import Pdb
+        Pdb().set_trace()
         textures = load_textures(image, faces, textures, is_update)
     return textures
 
