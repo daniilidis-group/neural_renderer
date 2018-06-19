@@ -15,6 +15,8 @@ def vertices_to_faces(vertices, faces):
 
     bs, nv = vertices.shape[:2]
     bs, nf = faces.shape[:2]
-    faces = faces + (torch.arange(bs, dtype=torch.int32) * nv)[:, None, None]
+    device = vertices.device
+    faces = faces + (torch.arange(bs, dtype=torch.int32).to(device) * nv)[:, None, None]
     vertices = vertices.reshape((bs * nv, 3))
-    return vertices[faces]
+    # pytorch only supports long and byte tensors for indexing
+    return vertices[faces.long()]

@@ -1,6 +1,6 @@
 import math
 
-import chainer.functions as cf
+import torch
 
 import neural_renderer
 
@@ -35,7 +35,7 @@ class Renderer():
     def render_silhouettes(self, vertices, faces):
         # fill back
         if self.fill_back:
-            faces = cf.concat((faces, faces[:, :, ::-1]), axis=1).data
+            faces = torch.cat((faces, faces[:, :, list(reversed(range(faces.shape[-1])))]), dim=1).detach()
 
         # viewpoint transformation
         if self.camera_mode == 'look_at':
@@ -55,7 +55,7 @@ class Renderer():
     def render_depth(self, vertices, faces):
         # fill back
         if self.fill_back:
-            faces = cf.concat((faces, faces[:, :, ::-1]), axis=1).data
+            faces = torch.cat((faces, faces[:, :, list(reversed(range(faces.shape[-1])))]), dim=1).detach()
 
         # viewpoint transformation
         if self.camera_mode == 'look_at':
@@ -75,8 +75,8 @@ class Renderer():
     def render(self, vertices, faces, textures):
         # fill back
         if self.fill_back:
-            faces = cf.concat((faces, faces[:, :, ::-1]), axis=1).data
-            textures = cf.concat((textures, textures.transpose((0, 1, 4, 3, 2, 5))), axis=1)
+            faces = torch.cat((faces, faces[:, :, list(reversed(range(faces.shape[-1])))]), dim=1).detach()
+            textures = torch.cat((textures, textures.permute((0, 1, 4, 3, 2, 5))), dim=1)
 
         # lighting
         faces_lighting = neural_renderer.vertices_to_faces(vertices, faces)

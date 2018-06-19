@@ -1,8 +1,26 @@
+#include <iostream>
 #include <ATen/ATen.h>
 
 #include <cuda.h>
 #include <cuda_runtime.h>
 
+// for the older gpus atomicAdd with double arguments does not exist
+#if  __CUDA_ARCH__ < 600 and defined(__CUDA_ARCH__)
+static __inline__ __device__ double atomicAdd(double* address, double val) {
+    unsigned long long int* address_as_ull =
+                              (unsigned long long int*)address;
+    unsigned long long int old = *address_as_ull, assumed;
+
+    do {
+        assumed = old;
+        old = atomicCAS(address_as_ull, assumed,
+                __double_as_longlong(val + __longlong_as_double(assumed)));
+    // Note: uses integer comparison to avoid hang in case of NaN (since NaN != NaN) } while (assumed != old);
+
+    } while (assumed != old);
+    return __longlong_as_double(old);
+}
+#endif
 // implementation of atomicExch for double input
 // adapted from https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html
 __device__ double atomicExch(double* address, double val) {
@@ -24,11 +42,12 @@ namespace{
 template <typename scalar_t>
 __global__ void forward_face_index_map_cuda_kernel(
         const scalar_t* __restrict__ faces,
-        int32_t* __restrict__ face_index_map,
-        scalar_t* __restrict__ weight_map,
-        scalar_t* __restrict__ depth_map,
-        scalar_t* __restrict__ face_inv_map,
-        int32_t* __restrict__ lock,
+        int32_t*  face_index_map,
+        scalar_t* weight_map,
+        scalar_t*  depth_map,
+        scalar_t* face_inv_map,
+        int32_t* lock,
+        size_t batch_size,
         size_t num_faces,
         int image_size,
         scalar_t near,
@@ -38,6 +57,9 @@ __global__ void forward_face_index_map_cuda_kernel(
         int return_depth) {
     /* batch number, face, number, image size, face[v012][RGB] */
     const int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i >= num_faces * batch_size) {
+        return;
+    }
     const int bn = i / num_faces;
     const int fn = i % num_faces;
     const int is = image_size;
@@ -165,19 +187,23 @@ __global__ void forward_face_index_map_cuda_kernel(
 
 template <typename scalar_t>
 __global__ void forward_texture_sampling_cuda_kernel(
-		const scalar_t* __restrict__ faces,
-		const scalar_t* __restrict__ textures,
-		const int32_t* __restrict__ face_index_map,
-		const scalar_t* __restrict__ weight_map,
-		const scalar_t* __restrict__ depth_map,
-		scalar_t* __restrict__ rgb_map,
-		int32_t* __restrict__ sampling_index_map,
-        scalar_t* __restrict__ sampling_weight_map,
+		const scalar_t* faces,
+		const scalar_t* textures,
+		const int32_t* face_index_map,
+		const scalar_t* weight_map,
+		const scalar_t* depth_map,
+		scalar_t* rgb_map,
+		int32_t* sampling_index_map,
+        scalar_t* sampling_weight_map,
+        size_t batch_size,
         int num_faces,
         int image_size,
         int texture_size,
         scalar_t eps) {
     const int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i >= batch_size * image_size * image_size) {
+        return;
+    }
     const int face_index = face_index_map[i];
     
     if (face_index >= 0) {
@@ -234,19 +260,23 @@ __global__ void forward_texture_sampling_cuda_kernel(
 
 template <typename scalar_t>
 __global__ void backward_pixel_map_cuda_kernel(
-		const scalar_t* __restrict__ faces,
-        int32_t* __restrict__ face_index_map,
-        scalar_t* __restrict__ rgb_map,
-        scalar_t* __restrict__ alpha_map,
-        scalar_t* __restrict__ grad_rgb_map,
-        scalar_t* __restrict__ grad_alpha_map,
-        scalar_t* __restrict__ grad_faces,
+		const scalar_t* faces,
+        int32_t*  face_index_map,
+        scalar_t*  rgb_map,
+        scalar_t*  alpha_map,
+        scalar_t*  grad_rgb_map,
+        scalar_t*  grad_alpha_map,
+        scalar_t*  grad_faces,
+        size_t batch_size,
         size_t num_faces,
         int image_size,
         scalar_t eps,
         int return_rgb,
         int return_alpha) {
     const int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i >= batch_size * num_faces) {
+        return;
+    }
     const int bn = i / num_faces;
     const int fn = i % num_faces;
     const int is = image_size;
@@ -490,16 +520,20 @@ __global__ void backward_pixel_map_cuda_kernel(
 
 template <typename scalar_t>
 __global__ void backward_textures_cuda_kernel(
-        const int32_t* __restrict__ face_index_map,
-        scalar_t* __restrict__ sampling_weight_map,
-        int32_t* __restrict__ sampling_index_map,
-        scalar_t* __restrict__ grad_rgb_map,
-        scalar_t* __restrict__ grad_textures,
+        const int32_t* face_index_map,
+        scalar_t* sampling_weight_map,
+        int32_t* sampling_index_map,
+        scalar_t* grad_rgb_map,
+        scalar_t* grad_textures,
+        size_t batch_size,
         size_t num_faces,
         int image_size,
         size_t texture_size) {
 
     const int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i >= batch_size * image_size * image_size) {
+        return;
+    }
     const int face_index = face_index_map[i];
     if (0 <= face_index) {
         int is = image_size;
@@ -530,10 +564,14 @@ __global__ void backward_depth_map_cuda_kernel(
         const scalar_t* __restrict__ weight_map,
         scalar_t* __restrict__ grad_depth_map,
         scalar_t* __restrict__ grad_faces,
+        size_t batch_size,
         size_t num_faces,
         int image_size) {
     
     const int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i >= batch_size * image_size * image_size) {
+        return;
+    }
     const int fn = face_index_map[i];
     if (0 <= fn) {
         const int nf = num_faces;
@@ -587,7 +625,7 @@ std::vector<at::Tensor> forward_face_index_map_cuda(
     const auto batch_size = faces.size(0);
     const auto num_faces = faces.size(1);
     const int threads = 1024;
-    const dim3 blocks(batch_size * num_faces);
+    const int blocks = (batch_size * num_faces - 1) / threads +1;
 
     AT_DISPATCH_FLOATING_TYPES(faces.type(), "forward_face_index_map_cuda", ([&] {
       forward_face_index_map_cuda_kernel<scalar_t><<<blocks, threads>>>(
@@ -597,6 +635,7 @@ std::vector<at::Tensor> forward_face_index_map_cuda(
           depth_map.data<scalar_t>(),
           face_inv_map.data<scalar_t>(),
           lock.data<int32_t>(),
+          batch_size,
           num_faces,
           image_size,
           (scalar_t) near,
@@ -605,6 +644,10 @@ std::vector<at::Tensor> forward_face_index_map_cuda(
           return_alpha,
           return_depth);
       }));
+
+    cudaError_t err = cudaGetLastError();
+    if (err != cudaSuccess) 
+            printf("Error in forward_face_index_map: %s\n", cudaGetErrorString(err));
     return {face_index_map, weight_map, depth_map, face_inv_map};
 }
 
@@ -622,9 +665,9 @@ std::vector<at::Tensor> forward_texture_sampling_cuda(
 
     const auto batch_size = faces.size(0);
     const auto num_faces = faces.size(1);
-    const auto texture_size = textures.size(1);
+    const auto texture_size = textures.size(0);
     const int threads = 1024;
-    const dim3 blocks(batch_size * image_size * image_size);
+    const int blocks = (batch_size * image_size * image_size - 1) / threads + 1;
 
     AT_DISPATCH_FLOATING_TYPES(faces.type(), "forward_texture_sampling_cuda", ([&] {
       forward_texture_sampling_cuda_kernel<scalar_t><<<blocks, threads>>>(
@@ -636,11 +679,17 @@ std::vector<at::Tensor> forward_texture_sampling_cuda(
           rgb_map.data<scalar_t>(),
 		  sampling_index_map.data<int32_t>(),
 		  sampling_weight_map.data<scalar_t>(),
+          batch_size,
 		  num_faces,
           image_size,
           texture_size,
           eps);
       }));
+
+    cudaError_t err = cudaGetLastError();
+    if (err != cudaSuccess) 
+            printf("Error in forward_texture_sampling: %s\n", cudaGetErrorString(err));
+
     return {rgb_map, sampling_index_map, sampling_weight_map};
 }
 
@@ -660,7 +709,7 @@ at::Tensor backward_pixel_map_cuda(
     const auto batch_size = faces.size(0);
     const auto num_faces = faces.size(1);
     const int threads = 1024;
-    const dim3 blocks(batch_size * num_faces);
+    const int blocks = (batch_size * num_faces - 1) / threads + 1;
 
     AT_DISPATCH_FLOATING_TYPES(faces.type(), "backward_pixel_map_cuda", ([&] {
       backward_pixel_map_cuda_kernel<scalar_t><<<blocks, threads>>>(
@@ -671,12 +720,18 @@ at::Tensor backward_pixel_map_cuda(
           grad_rgb_map.data<scalar_t>(),
           grad_alpha_map.data<scalar_t>(),
           grad_faces.data<scalar_t>(),
+          batch_size,
 		  num_faces,
           image_size,
           (scalar_t) eps,
           return_rgb,
           return_alpha);
       }));
+
+    cudaError_t err = cudaGetLastError();
+    if (err != cudaSuccess) 
+            printf("Error in backward_pixel_map: %s\n", cudaGetErrorString(err));
+
     return grad_faces;
 }
 
@@ -692,7 +747,7 @@ at::Tensor backward_textures_cuda(
     const auto texture_size = grad_textures.size(0);
     const auto image_size = face_index_map.size(1);
     const int threads = 1024;
-    const dim3 blocks(batch_size * image_size * image_size);
+    const int blocks = (batch_size * image_size * image_size - 1) / threads;
 
     AT_DISPATCH_FLOATING_TYPES(sampling_weight_map.type(), "backward_textures_cuda", ([&] {
       backward_textures_cuda_kernel<scalar_t><<<blocks, threads>>>(
@@ -701,10 +756,16 @@ at::Tensor backward_textures_cuda(
           sampling_index_map.data<int32_t>(),
           grad_rgb_map.data<scalar_t>(),
           grad_textures.data<scalar_t>(),
+          batch_size,
           num_faces,
           image_size,
           texture_size);
       }));
+
+    cudaError_t err = cudaGetLastError();
+    if (err != cudaSuccess) 
+            printf("Error in backward_textures: %s\n", cudaGetErrorString(err));
+
     return grad_textures;
 }
 at::Tensor backward_depth_map_cuda(
@@ -720,7 +781,7 @@ at::Tensor backward_depth_map_cuda(
     const auto batch_size = faces.size(0);
     const auto num_faces = faces.size(1);
     const int threads = 1024;
-    const dim3 blocks(batch_size * image_size * image_size);
+    const dim3 blocks = (batch_size * image_size * image_size - 1) / threads;
 
     AT_DISPATCH_FLOATING_TYPES(faces.type(), "backward_depth_map_cuda", ([&] {
       backward_depth_map_cuda_kernel<scalar_t><<<blocks, threads>>>(
@@ -731,9 +792,14 @@ at::Tensor backward_depth_map_cuda(
           weight_map.data<scalar_t>(),
           grad_depth_map.data<scalar_t>(),
           grad_faces.data<scalar_t>(),
+          batch_size,
           num_faces,
           image_size);
       }));
+
+    cudaError_t err = cudaGetLastError();
+    if (err != cudaSuccess) 
+            printf("Error in backward_depth_map: %s\n", cudaGetErrorString(err));
 
     return grad_faces;
 }

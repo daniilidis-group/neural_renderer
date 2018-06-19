@@ -48,23 +48,22 @@ def rasterize_rgbad(
             }
 
     """
-
     if textures is None:
-        inputs = [faces]
+        inputs = [faces, None]
     else:
         inputs = [faces, textures]
 
     if anti_aliasing:
         # 2x super-sampling
         rgb, alpha, depth = Rasterize(
-            image_size * 2, near, far, eps, background_color, return_rgb, return_alpha, return_depth)(inputs)
+            image_size * 2, near, far, eps, background_color, return_rgb, return_alpha, return_depth)(*inputs)
     else:
         rgb, alpha, depth = Rasterize(
-            image_size, near, far, eps, background_color, return_rgb, return_alpha, return_depth)(inputs)
+            image_size, near, far, eps, background_color, return_rgb, return_alpha, return_depth)(*inputs)
 
     # transpose & vertical flip
     if return_rgb:
-        rgb = rgb.transpose((0, 3, 1, 2))
+        rgb = rgb.permute((0, 3, 1, 2))
         # pytorch does not support negative slicing for the moment
         # rgb = rgb[:, :, ::-1, :]
         rgb = rgb[:, :, list(reversed(range(rgb.shape[2]))), :]

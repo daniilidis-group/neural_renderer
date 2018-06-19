@@ -83,7 +83,6 @@ def load_textures(filename_obj, filename_mtl, texture_size):
                 textures[i, :, :, :, :] = color[None, None, None, :]
 
     #
-    load_textures = LoadTexturesFunction.apply
     for material_name, filename_texture in texture_filenames.items():
         filename_texture = os.path.join(os.path.dirname(filename_obj), filename_texture)
         image = skimage.io.imread(filename_texture).astype(np.float32) / 255.
@@ -92,7 +91,7 @@ def load_textures(filename_obj, filename_mtl, texture_size):
         image = torch.from_numpy(image.copy()).cuda()
         is_update = (np.array(material_names) == material_name).astype(np.int32)
         is_update = torch.from_numpy(is_update).cuda()
-        textures = load_textures(image, faces, textures, is_update)
+        textures = LoadTexturesFunction.apply(image, faces, textures, is_update)
     return textures
 
 def load_obj(filename_obj, normalization=True, texture_size=4, load_texture=False):
@@ -108,7 +107,7 @@ def load_obj(filename_obj, normalization=True, texture_size=4, load_texture=Fals
             continue
         if line.split()[0] == 'v':
             vertices.append([float(v) for v in line.split()[1:4]])
-    vertices = np.vstack(vertices).astype(np.float32)
+    vertices = torch.from_numpy(np.vstack(vertices).astype(np.float32)).cuda()
 
     # load faces
     faces = []
@@ -123,7 +122,7 @@ def load_obj(filename_obj, normalization=True, texture_size=4, load_texture=Fals
                 v1 = int(vs[i + 1].split('/')[0])
                 v2 = int(vs[i + 2].split('/')[0])
                 faces.append((v0, v1, v2))
-    faces = np.vstack(faces).astype(np.int32) - 1
+    faces = torch.from_numpy(np.vstack(faces).astype(np.int32)).cuda() - 1
 
     # load textures
     textures = None
@@ -138,10 +137,10 @@ def load_obj(filename_obj, normalization=True, texture_size=4, load_texture=Fals
 
     # normalize into a unit cube centered zero
     if normalization:
-        vertices -= vertices.min(0)[None, :]
-        vertices /= np.abs(vertices).max()
+        vertices -= vertices.min(0)[0][None, :]
+        vertices /= torch.abs(vertices).max()
         vertices *= 2
-        vertices -= vertices.max(0)[None, :] / 2
+        vertices -= vertices.max(0)[0][None, :] / 2
 
     if load_texture:
         return vertices, faces, textures

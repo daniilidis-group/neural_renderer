@@ -5,15 +5,24 @@ import numpy as np
 def lighting(
         faces, textures, intensity_ambient=0.5, intensity_directional=0.5, color_ambient=(1, 1, 1),
         color_directional=(1, 1, 1), direction=(0, 1, 0)):
+
     bs, nf = faces.shape[:2]
+    device = faces.device
 
     # arguments
+    # make sure to convert all inputs to float tensors
     if isinstance(color_ambient, tuple) or isinstance(color_ambient, list):
-        color_ambient = torch.from_numpy(np.array(color_ambient, np.float32))
+        color_ambient = torch.from_numpy(np.array(color_ambient, np.float32)).to(device)
+    elif isinstance(color_ambient, np.ndarray):
+        color_ambient = torch.from_numpy(color_ambient).float().to(device)
     if isinstance(color_directional, tuple) or isinstance(color_directional, list):
-        color_directional = torch.from_numpy(np.array(color_directional, np.float32))
+        color_directional = torch.from_numpy(np.array(color_directional, np.float32)).to(device)
+    elif isinstance(color_directional, np.ndarray):
+        color_directional = torch.from_numpy(color_directional).float().to(device)
     if isinstance(direction, tuple) or isinstance(direction, list):
-        direction = torch.from_numpy(np.array(direction, np.float32))
+        direction = torch.from_numpy(np.array(direction, np.float32)).to(device)
+    elif isinstance(direction, np.ndarray):
+        direction = torch.from_numpy(direction).float().to(device)
     if color_ambient.ndimension() == 1:
         color_ambient = color_ambient[None, :]
     if color_directional.ndimension() == 1:
@@ -22,7 +31,7 @@ def lighting(
         direction = direction[None, :]
 
     # create light
-    light = torch.zeros(bs, nf, 3, dtype=torch.float32)
+    light = torch.zeros(bs, nf, 3, dtype=torch.float32).to(device)
 
     # ambient light
     if intensity_ambient != 0:
