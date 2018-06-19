@@ -5,7 +5,7 @@
 
 namespace {
 template <typename scalar_t>
-__global__ void load_textures_cuda_forward_kernel(
+__global__ void load_textures_cuda_kernel(
     const scalar_t* __restrict__ image,
     const scalar_t* __restrict__ faces,
     const int32_t* __restrict__ is_update,
@@ -61,7 +61,7 @@ __global__ void load_textures_cuda_forward_kernel(
 }
 }
 
-at::Tensor load_textures_cuda_forward(
+at::Tensor load_textures_cuda(
         at::Tensor image,
         at::Tensor faces,
         at::Tensor is_update,
@@ -73,8 +73,8 @@ at::Tensor load_textures_cuda_forward(
     const int threads = 1024;
     const int blocks = (texture_size / 3 - 1) / threads + 1;
 
-    AT_DISPATCH_FLOATING_TYPES(image.type(), "load_textures_cuda_forward", ([&] {
-      load_textures_cuda_forward_kernel<scalar_t><<<blocks, threads>>>(
+    AT_DISPATCH_FLOATING_TYPES(image.type(), "load_textures_cuda", ([&] {
+      load_textures_cuda_kernel<scalar_t><<<blocks, threads>>>(
           image.data<scalar_t>(),
           faces.data<scalar_t>(),
           is_update.data<int32_t>(),

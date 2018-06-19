@@ -2,7 +2,7 @@
 
 // CUDA forward declarations
 
-at::Tensor load_textures_cuda_forward(
+at::Tensor load_textures_cuda(
         at::Tensor image,
         at::Tensor faces,
         at::Tensor is_update,
@@ -15,7 +15,7 @@ at::Tensor load_textures_cuda_forward(
 #define CHECK_INPUT(x) CHECK_CUDA(x); CHECK_CONTIGUOUS(x)
 
 
-at::Tensor load_textures_forward(
+at::Tensor load_textures(
         at::Tensor image,
         at::Tensor faces,
         at::Tensor is_update,
@@ -26,10 +26,10 @@ at::Tensor load_textures_forward(
     CHECK_INPUT(is_update);
     CHECK_INPUT(textures);
 
-    return load_textures_cuda_forward(image, faces, is_update, textures);
+    return load_textures_cuda(image, faces, is_update, textures);
                                       
 }
 
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
-    m.def("forward", &load_textures_forward, "LOAD_TEXTURES forward (CUDA)");
+    m.def("load_textures", &load_textures_cuda, "LOAD_TEXTURES (CUDA)");
 }

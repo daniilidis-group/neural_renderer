@@ -42,22 +42,15 @@ class TestCore(unittest.TestCase):
         vertices, faces, textures = neural_renderer.load_obj(
             '../../chainer/tests/data/1cde62b063e14777c9152a706245d48/model.obj', load_texture=True)
 
-        # vertices = chainer.cuda.to_gpu(vertices)
-        # faces = chainer.cuda.to_gpu(faces)
-        # textures = chainer.cuda.to_gpu(textures)
         renderer.eye = neural_renderer.get_points_from_angles(2, 15, 30)
         images = renderer.render(vertices[None, :, :], faces[None, :, :], textures[None, :, :, :, :, :]).permute(0,2,3,1).detach().cpu().numpy()
-        # scipy.misc.imsave('car.png', scipy.misc.toimage(images[0]))
-        imsave('car.png', images[0])
+        imsave('test_out/car.png', images[0])
 
         vertices, faces, textures = neural_renderer.load_obj(
             '../../chainer/tests/data/4e49873292196f02574b5684eaec43e9/model.obj', load_texture=True, texture_size=16)
-        # vertices = chainer.cuda.to_gpu(vertices)
-        # faces = chainer.cuda.to_gpu(faces)
-        # textures = chainer.cuda.to_gpu(textures)
         renderer.eye = neural_renderer.get_points_from_angles(2, 15, -90)
         images = renderer.render(vertices[None, :, :], faces[None, :, :], textures[None, :, :, :, :, :]).permute(0,2,3,1).detach().cpu().numpy()
-        imsave('display.png', images[0])
+        imsave('test_out/display.png', images[0])
 
 
 if __name__ == '__main__':

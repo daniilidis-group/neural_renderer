@@ -9,77 +9,74 @@ import utils
 
 
 class TestRasterize(unittest.TestCase):
-    # def test_forward_case1(self):
-    #     """Rendering a teapot without anti-aliasing."""
+    def test_forward_case1(self):
+        """Rendering a teapot without anti-aliasing."""
 
-    #     # load teapot
-    #     vertices, faces, textures = utils.load_teapot_batch()
-    #     vertices = vertices.cuda()
-    #     faces = faces.cuda()
-    #     textures = textures.cuda()
+        # load teapot
+        vertices, faces, textures = utils.load_teapot_batch()
+        vertices = vertices.cuda()
+        faces = faces.cuda()
+        textures = textures.cuda()
 
-    #     # create renderer
-    #     renderer = neural_renderer.Renderer()
-    #     renderer.image_size = 256
-    #     renderer.anti_aliasing = False
+        # create renderer
+        renderer = neural_renderer.Renderer()
+        renderer.image_size = 256
+        renderer.anti_aliasing = False
 
-    #     # render
-    #     images = renderer.render(vertices, faces, textures)
-    #     images = images.detach().cpu().numpy()
-    #     image = images[2]
-    #     image = image.transpose((1, 2, 0))
+        # render
+        images = renderer.render(vertices, faces, textures)
+        images = images.detach().cpu().numpy()
+        image = images[2]
+        image = image.transpose((1, 2, 0))
 
-    #     imsave('test_rasterize1.png', image)
+        imsave('test_rasterize1.png', image)
 
-    # def test_forward_case2(self):
-    #     """Rendering a teapot with anti-aliasing and another viewpoint."""
+    def test_forward_case2(self):
+        """Rendering a teapot with anti-aliasing and another viewpoint."""
 
-    #     # load teapot
-    #     vertices, faces, textures = utils.load_teapot_batch()
-    #     vertices = vertices.cuda()
-    #     faces = faces.cuda()
-    #     textures = textures.cuda()
+        # load teapot
+        vertices, faces, textures = utils.load_teapot_batch()
+        vertices = vertices.cuda()
+        faces = faces.cuda()
+        textures = textures.cuda()
 
-    #     # create renderer
-    #     renderer = neural_renderer.Renderer()
-    #     renderer.eye = [1, 1, -2.7]
+        # create renderer
+        renderer = neural_renderer.Renderer()
+        renderer.eye = [1, 1, -2.7]
 
-    #     # render
-    #     images = renderer.render(vertices, faces, textures)
-    #     images = images.detach().cpu().numpy()
-    #     image = images[2]
-    #     image = image.transpose((1, 2, 0))
+        # render
+        images = renderer.render(vertices, faces, textures)
+        images = images.detach().cpu().numpy()
+        image = images[2]
+        image = image.transpose((1, 2, 0))
 
-    #     imsave('test_rasterize2.png', image)
+        imsave('test_rasterize2.png', image)
 
-    # def test_forward_case3(self):
-    #     """Whether a silhouette by neural renderer matches that by Blender."""
+    def test_forward_case3(self):
+        """Whether a silhouette by neural renderer matches that by Blender."""
 
-    #     # load teapot
-    #     vertices, faces, textures = utils.load_teapot_batch()
-    #     vertices = vertices.cuda()
-    #     faces = faces.cuda()
-    #     textures = textures.cuda()
+        # load teapot
+        vertices, faces, textures = utils.load_teapot_batch()
+        vertices = vertices.cuda()
+        faces = faces.cuda()
+        textures = textures.cuda()
 
-    #     # create renderer
-    #     renderer = neural_renderer.Renderer()
-    #     renderer.image_size = 256
-    #     renderer.anti_aliasing = False
-    #     renderer.light_intensity_ambient = 1.0
-    #     renderer.light_intensity_directional = 0.0
+        # create renderer
+        renderer = neural_renderer.Renderer()
+        renderer.image_size = 256
+        renderer.anti_aliasing = False
+        renderer.light_intensity_ambient = 1.0
+        renderer.light_intensity_directional = 0.0
 
-    #     images = renderer.render(vertices, faces, textures)
-    #     images = images.detach().cpu().numpy()
-    #     image = images[2].mean(0)
+        images = renderer.render(vertices, faces, textures)
+        images = images.detach().cpu().numpy()
+        image = images[2].mean(0)
 
-    #     # load reference image by blender
-    #     ref = imread('../../chainer/tests/data/teapot_blender.png')
-    #     ref = (ref.min(axis=-1) != 255).astype(np.float32)
-    #     # ref = (ref.min(-1) != 255).astype(np.float32)
+        # load reference image by blender
+        ref = imread('../../chainer/tests/data/teapot_blender.png')
+        ref = (ref.min(axis=-1) != 255).astype(np.float32)
 
-    #     # from IPython.core.debugger import Pdb
-    #     # Pdb().set_trace()
-    #     assert(np.allclose(ref, image))
+        assert(np.allclose(ref, image))
 
     def test_backward_case1(self):
         """Backward if non-zero gradient is out of a face."""

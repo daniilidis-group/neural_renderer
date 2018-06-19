@@ -1,19 +1,8 @@
 import os
-import string
 
-import torch
-import numpy as np
 import scipy.misc
 
-from .cuda.create_texture_image import CreateTextureImageFunction
-
-
-def create_texture_image(textures, texture_size_out=16):
-    image, vertices = CreateTextureImageFunction.apply(textures, texture_size_out)
-    image = image.detach().cpu().numpy()
-    vertices = vertices.detach().cpu().numpy()
-    image = image[::-1, ::1]
-    return image, vertices
+from .cuda.create_texture_image import create_texture_image
 
 
 def save_obj(filename, vertices, faces, textures=None):

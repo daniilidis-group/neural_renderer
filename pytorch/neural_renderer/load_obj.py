@@ -5,7 +5,7 @@ import torch
 import numpy as np
 import skimage.io
 
-from .cuda import LoadTexturesFunction
+from .cuda.load_textures import load_textures
 
 def load_mtl(filename_mtl):
     # load color (Kd) and filename of textures from *.mtl
@@ -24,7 +24,7 @@ def load_mtl(filename_mtl):
     return colors, texture_filenames
 
 
-def load_textures(filename_obj, filename_mtl, texture_size):
+def get_textures(filename_obj, filename_mtl, texture_size):
     # load vertices
     vertices = []
     for line in open(filename_obj).readlines():
@@ -32,10 +32,7 @@ def load_textures(filename_obj, filename_mtl, texture_size):
             continue
         if line.split()[0] == 'vt':
             vertices.append([float(v) for v in line.split()[1:3]])
-    try:
-        vertices = np.vstack(vertices).astype(np.float32)
-    except ValueError:
-        print('wtf?')
+    vertices = np.vstack(vertices).astype(np.float32)
 
     # load faces for textures
     faces = []
@@ -91,7 +88,7 @@ def load_textures(filename_obj, filename_mtl, texture_size):
         image = torch.from_numpy(image.copy()).cuda()
         is_update = (np.array(material_names) == material_name).astype(np.int32)
         is_update = torch.from_numpy(is_update).cuda()
-        textures = LoadTexturesFunction.apply(image, faces, textures, is_update)
+        textures = load_textures(image, faces, textures, is_update)
     return textures
 
 def load_obj(filename_obj, normalization=True, texture_size=4, load_texture=False):
@@ -130,7 +127,7 @@ def load_obj(filename_obj, normalization=True, texture_size=4, load_texture=Fals
         for line in open(filename_obj).readlines():
             if line.startswith('mtllib'):
                 filename_mtl = os.path.join(os.path.dirname(filename_obj), line.split()[1])
-                textures = load_textures(filename_obj, filename_mtl, texture_size)
+                textures = get_textures(filename_obj, filename_mtl, texture_size)
                 print(textures)
         if textures is None:
             raise Exception('Failed to load textures.')
