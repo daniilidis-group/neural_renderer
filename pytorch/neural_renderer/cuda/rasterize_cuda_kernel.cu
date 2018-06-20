@@ -7,20 +7,18 @@
 // for the older gpus atomicAdd with double arguments does not exist
 #if  __CUDA_ARCH__ < 600 and defined(__CUDA_ARCH__)
 static __inline__ __device__ double atomicAdd(double* address, double val) {
-    unsigned long long int* address_as_ull =
-                              (unsigned long long int*)address;
+    unsigned long long int* address_as_ull = (unsigned long long int*)address;
     unsigned long long int old = *address_as_ull, assumed;
-
     do {
         assumed = old;
         old = atomicCAS(address_as_ull, assumed,
                 __double_as_longlong(val + __longlong_as_double(assumed)));
     // Note: uses integer comparison to avoid hang in case of NaN (since NaN != NaN) } while (assumed != old);
-
     } while (assumed != old);
     return __longlong_as_double(old);
 }
 #endif
+
 // implementation of atomicExch for double input
 // adapted from https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html
 __device__ double atomicExch(double* address, double val) {
@@ -665,7 +663,7 @@ std::vector<at::Tensor> forward_texture_sampling_cuda(
 
     const auto batch_size = faces.size(0);
     const auto num_faces = faces.size(1);
-    const auto texture_size = textures.size(0);
+    const auto texture_size = textures.size(2);
     const int threads = 1024;
     const int blocks = (batch_size * image_size * image_size - 1) / threads + 1;
 
@@ -744,8 +742,8 @@ at::Tensor backward_textures_cuda(
         int num_faces) {
 
     const auto batch_size = face_index_map.size(0);
-    const auto texture_size = grad_textures.size(0);
     const auto image_size = face_index_map.size(1);
+    const auto texture_size = grad_textures.size(2);
     const int threads = 1024;
     const int blocks = (batch_size * image_size * image_size - 1) / threads;
 

@@ -65,6 +65,7 @@ def rasterize_rgbad(
     if return_rgb:
         rgb = rgb.permute((0, 3, 1, 2))
         # pytorch does not support negative slicing for the moment
+        # may need to look at this again because it seems to be very slow
         # rgb = rgb[:, :, ::-1, :]
         rgb = rgb[:, :, list(reversed(range(rgb.shape[2]))), :]
     if return_alpha:

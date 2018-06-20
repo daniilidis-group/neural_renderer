@@ -37,30 +37,29 @@ class RasterizeFunction(Function):
             ctx.texture_size = textures.shape[2]
         else:
             # initializing with dummy values
-            textures = torch.zeros(1)
+            textures = torch.cuda.FloatTensor(1).fill_(0)
             ctx.texture_size = None
 
-        face_index_map = -1 * torch.ones((ctx.batch_size, ctx.image_size, ctx.image_size), dtype=torch.int32).to(ctx.device)
-        weight_map = torch.zeros((ctx.batch_size, ctx.image_size, ctx.image_size, 3), dtype=torch.float32).to(ctx.device)
-        depth_map = torch.zeros_like(face_index_map, dtype=torch.float32).to(ctx.device) + ctx.far
+        face_index_map = torch.cuda.IntTensor(ctx.batch_size, ctx.image_size, ctx.image_size).fill_(-1)
+        weight_map = torch.cuda.FloatTensor(ctx.batch_size, ctx.image_size, ctx.image_size, 3).fill_(0.0)
+        depth_map = torch.cuda.FloatTensor(ctx.batch_size, ctx.image_size, ctx.image_size).fill_(ctx.far)
 
         if ctx.return_rgb:
-            rgb_map = torch.zeros((ctx.batch_size, ctx.image_size, ctx.image_size, 3), dtype=torch.float32).to(ctx.device)
-            sampling_index_map = torch.zeros((ctx.batch_size, ctx.image_size, ctx.image_size, 8), dtype=torch.int32).to(ctx.device)
-            sampling_weight_map = torch.zeros((ctx.batch_size, ctx.image_size, ctx.image_size, 8), dtype=torch.float32).to(ctx.device)
-
+            rgb_map = torch.cuda.FloatTensor(ctx.batch_size, ctx.image_size, ctx.image_size, 3).fill_(0)
+            sampling_index_map = torch.cuda.IntTensor(ctx.batch_size, ctx.image_size, ctx.image_size, 8).fill_(0)
+            sampling_weight_map = torch.cuda.FloatTensor(ctx.batch_size, ctx.image_size, ctx.image_size, 8).fill_(0)
         else:
-            rgb_map = torch.zeros(1, dtype=torch.float32)
-            sampling_index_map = torch.zeros(1, dtype=torch.int32).to(ctx.device)
-            sampling_weight_map = torch.zeros(1, dtype=torch.float32).to(ctx.device)
+            rgb_map = torch.cuda.FloatTensor(1).fill_(0)
+            sampling_index_map = torch.cuda.FloatTensor(1).fill_(0)
+            sampling_weight_map = torch.cuda.FloatTensor(1).fill_(0)
         if ctx.return_alpha:
-            alpha_map = torch.zeros((ctx.batch_size, ctx.image_size, ctx.image_size), dtype=torch.float32).to(ctx.device)
+            alpha_map = torch.cuda.FloatTensor(ctx.batch_size, ctx.image_size, ctx.image_size).fill_(0)
         else:
-            alpha_map = torch.zeros(1, dtype=torch.float32).to(ctx.device)
+            alpha_map = torch.cuda.FloatTensor(1).fill_(0)
         if ctx.return_depth:
-            face_inv_map = torch.zeros((ctx.batch_size, ctx.image_size, ctx.image_size, 3, 3), dtype=torch.float32).to(ctx.device)
+            face_inv_map = torch.cuda.FloatTensor(ctx.batch_size, ctx.image_size, ctx.image_size, 3, 3).fill_(0)
         else:
-            face_inv_map = torch.zeros(1, dtype=torch.float32).to(ctx.device)
+            face_inv_map = torch.cuda.FloatTensor(1).fill_(0)
 
         face_index_map, weight_map, depth_map, face_inv_map =\
             RasterizeFunction.forward_face_index_map(ctx, faces, face_index_map,
@@ -97,11 +96,13 @@ class RasterizeFunction(Function):
         sampling_index_map, sampling_weight_map = \
                 ctx.saved_tensors
         # initialize output buffers
+        # no need for explicit allocation of cuda.FloatTensor because zeros_like does it automatically
+        grad_faces = torch.zeros_like(faces, dtype=torch.float32).to(ctx.device).contiguous()
         grad_faces = torch.zeros_like(faces, dtype=torch.float32).to(ctx.device).contiguous()
         if ctx.return_rgb:
             grad_textures = torch.zeros_like(textures, dtype=torch.float32).to(ctx.device).contiguous()
         else:
-            grad_textures = torch.zeros(1, dtype=torch.float32).to(ctx.device)
+            grad_textures = torch.FloatTensor(1).fill_(0.0)
         
         # get grad_outputs
         if ctx.return_rgb:
@@ -110,21 +111,21 @@ class RasterizeFunction(Function):
             else:
                 grad_rgb_map = torch.zeros_like(rgb_map)
         else:
-            ctx.grad_rgb_map = torch.zeros(1, dtype=torch.float32)
+            grad_rgb_map = torch.FloatTensor(1).fill_(0.0)
         if ctx.return_alpha:
             if grad_alpha_map is not None:
-                grad_alpha_map = grad_alpha_map.clone()
+                grad_alpha_map = grad_alpha_map.contiguous()
             else:
                 grad_alpha_map = torch.zeros_like(alpha_map)
         else:
-            grad_alpha_map = torch.zeros(1, dtype=torch.float32)
+            grad_alpha_map = torch.FloatTensor(1).fill_(0.0)
         if ctx.return_depth:
             if grad_depth_map is not None:
                 grad_depth_map = grad_depth_map.contiguous()
             else:
                 grad_depth_map = torch.zeros_like(ctx.depth_map)
         else:
-            grad_depth_map = torch.zeros(1, dtype=torch.float32)
+            grad_depth_map = torch.FloatTensor(1).fill_(0.0)
 
         # backward pass
         grad_faces = RasterizeFunction.backward_pixel_map(
@@ -147,7 +148,7 @@ class RasterizeFunction(Function):
     @staticmethod
     def forward_face_index_map(ctx, faces, face_index_map, weight_map, 
                                depth_map, face_inv_map):
-        lock = torch.zeros(face_index_map.shape, dtype=torch.int32).to(ctx.device)
+        lock = torch.zeros_like(face_index_map, dtype=torch.int32)
         return rasterize_cuda.forward_face_index_map(faces, face_index_map, weight_map,
                                         depth_map, face_inv_map, lock,
                                         ctx.image_size, ctx.near, ctx.far,
@@ -175,7 +176,7 @@ class RasterizeFunction(Function):
     @staticmethod
     def forward_background(ctx, face_index_map, rgb_map):
         if ctx.return_rgb:
-            background_color = torch.tensor(ctx.background_color, dtype=torch.float32).to(ctx.device)
+            background_color = torch.cuda.FloatTensor(ctx.background_color)
             mask = (face_index_map >= 0).float()[:, :, :, None]
             if background_color.ndimension() == 1:
                 rgb_map = rgb_map * mask + (1-mask) * background_color[None, None, None, :]
