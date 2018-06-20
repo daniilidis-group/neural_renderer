@@ -3,7 +3,7 @@ import unittest
 import torch
 import numpy as np
 
-import neural_renderer
+from .context import neural_renderer
 
 class TestPerspective(unittest.TestCase):
     def test_case1(self):

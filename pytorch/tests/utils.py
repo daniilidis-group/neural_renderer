@@ -1,6 +1,6 @@
 import torch
 
-import neural_renderer
+from .context import neural_renderer
 
 
 def to_minibatch(data, batch_size=4, target_num=2):

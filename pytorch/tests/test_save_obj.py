@@ -1,7 +1,7 @@
 import os
 import unittest
 import numpy as np
-import neural_renderer
+from .context import neural_renderer
 import torch
 import scipy
 

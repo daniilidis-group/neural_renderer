@@ -4,7 +4,7 @@ import torch
 import numpy as np
 from skimage.io import imread, imsave
 
-import neural_renderer
+from .context import neural_renderer
 import utils
 
 

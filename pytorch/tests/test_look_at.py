@@ -3,7 +3,7 @@ import unittest
 import numpy as np
 import torch
 
-import neural_renderer
+from .context import neural_renderer
 
 class TestLookAt(unittest.TestCase):
     def test_case1(self):
