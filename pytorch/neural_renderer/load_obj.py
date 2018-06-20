@@ -1,9 +1,8 @@
 import os
-import string
 
 import torch
 import numpy as np
-import skimage.io
+from skimage.io import imread
 
 from .cuda.load_textures import load_textures
 
@@ -81,8 +80,7 @@ def get_textures(filename_obj, filename_mtl, texture_size):
 
     for material_name, filename_texture in texture_filenames.items():
         filename_texture = os.path.join(os.path.dirname(filename_obj), filename_texture)
-        image = skimage.io.imread(filename_texture).astype(np.float32) / 255.
-        skimage.io.imsave(material_name+'test.jpg', image)
+        image = imread(filename_texture).astype(np.float32) / 255.
         # pytorch does not support negative slicing for the moment
         image = image[::-1, :, :]
         image = torch.from_numpy(image.copy()).cuda()

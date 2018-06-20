@@ -11,7 +11,7 @@ __global__ void create_texture_image_cuda_kernel(
         const scalar_t* __restrict__ vertices_all,
         const scalar_t* __restrict__ textures,
         scalar_t* __restrict__ image,
-        size_t num_pixels,
+        size_t image_size,
         size_t num_faces,
         size_t texture_size_in,
         size_t texture_size_out,
@@ -19,7 +19,7 @@ __global__ void create_texture_image_cuda_kernel(
         scalar_t eps) {
 
     const int i = blockIdx.x * blockDim.x + threadIdx.x;
-    if (i >= num_pixels) {
+    if (i >= image_size / 3) {
         return;
     }
     const int x = i % (tile_width * texture_size_out);
@@ -96,12 +96,12 @@ __global__ void create_texture_image_cuda_kernel(
 template<typename scalar_t>
 __global__ void create_texture_image_boundary_cuda_kernel(
         scalar_t* image,
-        size_t num_pixels,
+        size_t image_size,
         size_t texture_size_out,
         size_t tile_width) {
 
     const int i = blockIdx.x * blockDim.x + threadIdx.x;
-    if (i >= num_pixels) {
+    if (i >= image_size / 3) {
         return;
     }
 
@@ -109,7 +109,7 @@ __global__ void create_texture_image_boundary_cuda_kernel(
     const int y = i / (tile_width * texture_size_out);
     if ((y % texture_size_out + 1) == (x % texture_size_out)) {
       for (int k = 0; k < 3; k++)
-          image[i * 3 + k] =
+          image[i * 3 + k] = 
               image[ (y * tile_width * texture_size_out + (x - 1))  * 3 + k];
     }
 }
@@ -127,15 +127,15 @@ at::Tensor create_texture_image_cuda(
     const auto texture_size_out = image.size(1) / tile_width;
 
     const int threads = 1024;
-    const int num_pixels = image.size(0) * image.size(1);
-    const int blocks = (num_pixels - 1) / threads + 1;
+    const int image_size = image.numel();
+    const int blocks = (image_size / 3 - 1) / threads + 1;
 
     AT_DISPATCH_FLOATING_TYPES(image.type(), "create_texture_image_cuda", ([&] {
       create_texture_image_cuda_kernel<scalar_t><<<blocks, threads>>>(
           vertices_all.data<scalar_t>(),
           textures.data<scalar_t>(),
           image.data<scalar_t>(),
-          num_pixels,
+          image_size,
           num_faces,
           texture_size_in,
           texture_size_out,
@@ -150,7 +150,7 @@ at::Tensor create_texture_image_cuda(
     AT_DISPATCH_FLOATING_TYPES(image.type(), "create_texture_image_boundary", ([&] {
       create_texture_image_boundary_cuda_kernel<scalar_t><<<blocks, threads>>>(
           image.data<scalar_t>(),
-          num_pixels,
+          image_size,
           texture_size_out,
           tile_width);
       }));
