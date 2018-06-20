@@ -8,7 +8,7 @@ import os
 import torch
 import torch.nn as nn
 import numpy as np
-import scipy.misc
+from skimage.io import imread, imsave
 import tqdm
 import imageio
 
@@ -22,15 +22,16 @@ class Model(nn.Module):
         # load .obj
         vertices, faces = neural_renderer.load_obj(filename_obj)
         self.vertices = nn.Parameter(vertices[None, :, :])
-        self.faces = faces[None, :, :]
+        self.register_buffer('faces', faces[None, :, :])
 
         # create textures
         texture_size = 2
         textures = torch.ones(1, self.faces.shape[1], texture_size, texture_size, texture_size, 3, dtype=torch.float32)
-        self.textures = textures
+        self.register_buffer('textures', textures)
 
         # load reference image
-        self.image_ref = torch.from_numpy(scipy.misc.imread(filename_ref).astype('float32').mean(-1) / 255.)[None, ::]
+        image_ref = torch.from_numpy(imread(filename_ref).astype(np.float32).mean(-1) / 255.)[None, ::]
+        self.register_buffer('image_ref', image_ref)
 
         # setup renderer
         renderer = neural_renderer.Renderer()
@@ -68,17 +69,19 @@ def main():
 
     optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, model.parameters()))
     # optimizer.setup(model)
-    loop = tqdm.tqdm(range(300))
-    for i in loop:
-        loop.set_description('Optimizing')
-        # optimizer.target.cleargrads()
-        optimizer.zero_grad()
-        loss = model()
-        loss.backward()
-        optimizer.step()
-        images = model.renderer.render_silhouettes(model.vertices, model.faces)
-        image = images.detach().cpu().numpy()[0]
-        scipy.misc.toimage(image, cmin=0, cmax=1).save('%s/_tmp_%04d.png' % (working_directory, i))
+    loop = tqdm.tqdm(range(10))
+    with torch.autograd.profiler.profile() as prof:
+        for i in loop:
+            loop.set_description('Optimizing')
+            # optimizer.target.cleargrads()
+            optimizer.zero_grad()
+            loss = model()
+            loss.backward()
+            optimizer.step()
+            images = model.renderer.render_silhouettes(model.vertices, model.faces)
+            image = images.detach().cpu().numpy()[0]
+            imsave('%s/_tmp_%04d.png' % (working_directory, i), image)
+    print(prof.key_averages())
     make_gif(working_directory, args.filename_output_optimization)
 
     # draw object
@@ -88,7 +91,7 @@ def main():
         model.renderer.eye = neural_renderer.get_points_from_angles(2.732, 0, azimuth)
         images = model.renderer.render(model.vertices, model.faces, model.textures)
         image = images.detach().cpu().numpy()[0].transpose((1, 2, 0))
-        scipy.misc.toimage(image, cmin=0, cmax=1).save('%s/_tmp_%04d.png' % (working_directory, num))
+        imsave('%s/_tmp_%04d.png' % (working_directory, num), image)
     make_gif(working_directory, args.filename_output_result)
 
 

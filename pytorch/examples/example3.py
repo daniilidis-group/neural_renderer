@@ -8,7 +8,7 @@ import os
 import torch
 import torch.nn as nn
 import numpy as np
-import scipy.misc
+from skimage.io import imread, imsave
 import tqdm
 import imageio
 
@@ -19,9 +19,8 @@ class Model(nn.Module):
     def __init__(self, filename_obj, filename_ref):
         super(Model, self).__init__()
         vertices, faces = neural_renderer.load_obj(filename_obj)
-        self.vertices = nn.Parameter(vertices[None, :, :])
-        self.faces = faces[None, :, :]
-        # self.register_buffer('mesh_faces', self.faces)
+        self.register_buffer('vertices', vertices[None, :, :])
+        self.register_buffer('faces', faces[None, :, :])
 
         # create textures
         texture_size = 4
@@ -29,9 +28,8 @@ class Model(nn.Module):
         self.textures = nn.Parameter(textures)
 
         # load reference image
-        self.image_ref = scipy.misc.imread(filename_ref).astype('float32') / 255.
-        self.image_ref = torch.from_numpy(self.image_ref).cuda().permute(2,0,1)[None, ::]
-        # self.register_buffer('m_image_ref', self.image_ref)
+        image_ref = torch.from_numpy(imread(filename_ref).astype('float32') / 255.).permute(2,0,1)[None, ::]
+        self.register_buffer('image_ref', image_ref)
 
         # setup renderer
         renderer = neural_renderer.Renderer()
@@ -75,8 +73,6 @@ def main():
         optimizer.zero_grad()
         loss = model()
         loss.backward()
-        # from IPython.core.debugger import Pdb
-        # Pdb().set_trace()
         optimizer.step()
 
     # draw object
@@ -86,7 +82,7 @@ def main():
         model.renderer.eye = neural_renderer.get_points_from_angles(2.732, 0, azimuth)
         images = model.renderer.render(model.vertices, model.faces, torch.tanh(model.textures))
         image = images.detach().cpu().numpy()[0].transpose((1, 2, 0))
-        scipy.misc.toimage(image, cmin=0, cmax=1).save('%s/_tmp_%04d.png' % (working_directory, num))
+        imsave('%s/_tmp_%04d.png' % (working_directory, num), image)
     make_gif(working_directory, args.filename_output)
 
 

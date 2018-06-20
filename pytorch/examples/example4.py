@@ -7,9 +7,8 @@ import os
 
 import torch
 import torch.nn as nn
-
 import numpy as np
-import scipy.misc
+from skimage.io import imread, imsave
 import tqdm
 import imageio
 
@@ -21,20 +20,17 @@ class Model(nn.Module):
         super(Model, self).__init__()
         # load .obj
         vertices, faces = neural_renderer.load_obj(filename_obj)
-        self.vertices = vertices[None, :, :]
-        self.faces = faces[None, :, :]
+        self.register_buffer('vertices', vertices[None, :, :])
+        self.register_buffer('faces', faces[None, :, :])
 
         # create textures
         texture_size = 2
         textures = torch.ones(1, self.faces.shape[1], texture_size, texture_size, texture_size, 3, dtype=torch.float32)
-        self.textures = textures.cuda()
+        self.register_buffer('textures', textures)
 
         # load reference image
-        if filename_ref is not None:
-            self.image_ref = (scipy.misc.imread(filename_ref).max(-1) != 0).astype('float32')
-            self.image_ref = torch.from_numpy(self.image_ref).cuda()
-        else:
-            self.image_ref = None
+        image_ref = torch.from_numpy((imread(filename_ref).max(-1) != 0).astype('float32'))
+        self.register_buffer('image_ref', image_ref)
 
         # camera parameters
         self.camera_position = nn.Parameter(torch.from_numpy(np.array([6, 10, -14], dtype=np.float32)))
@@ -53,19 +49,19 @@ class Model(nn.Module):
 def make_gif(working_directory, filename):
     with imageio.get_writer(filename, mode='I') as writer:
         for filename in glob.glob('%s/_tmp_*.png' % working_directory):
-            writer.append_data(imageio.imread(filename))
+            writer.append_data(imread(filename))
             os.remove(filename)
     writer.close()
 
 
 def make_reference_image(filename_ref, filename_obj):
     model = Model(filename_obj)
-    model.to_gpu()
+    model.cuda()
 
     model.renderer.eye = neural_renderer.get_points_from_angles(2.732, 30, -15)
     images = model.renderer.render(model.vertices, model.faces, torch.tanh(model.textures))
-    image = images.data.get()[0]
-    scipy.misc.toimage(image, cmin=0, cmax=1).save(filename_ref)
+    image = images.detach().cpu().numpy()[0]
+    imsave(filename_ref, image)
 
 
 def main():
@@ -93,8 +89,8 @@ def main():
         loss.backward()
         optimizer.step()
         images = model.renderer.render(model.vertices, model.faces, torch.tanh(model.textures))
-        image = images.detach().cpu().numpy()[0]
-        scipy.misc.toimage(image, cmin=0, cmax=1).save('%s/_tmp_%04d.png' % (working_directory, i))
+        image = images.detach().cpu().numpy()[0].transpose(1,2,0)
+        imsave('%s/_tmp_%04d.png' % (working_directory, i), image)
         loop.set_description('Optimizing (loss %.4f)' % loss.data)
         if loss.data < 70:
             break

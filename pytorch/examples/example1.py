@@ -30,7 +30,6 @@ def main():
 
     # create texture [batch_size=1, num_faces, texture_size, texture_size, texture_size, RGB]
     textures = torch.ones(1, faces.shape[1], texture_size, texture_size, texture_size, 3, dtype=torch.float32).cuda()
-    textures = torch.rand(*(textures.shape)).cuda()
 
     # to gpu
 
