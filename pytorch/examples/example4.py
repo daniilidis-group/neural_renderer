@@ -13,7 +13,7 @@ import scipy.misc
 import tqdm
 import imageio
 
-from .context import neural_renderer
+from context import neural_renderer
 
 
 class Model(nn.Module):

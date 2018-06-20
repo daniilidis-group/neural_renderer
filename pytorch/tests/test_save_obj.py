@@ -1,9 +1,10 @@
 import os
 import unittest
-import numpy as np
-from .context import neural_renderer
 import torch
+import numpy as np
 import scipy
+
+from context import neural_renderer
 
 class TestCore(unittest.TestCase):
     def test_save_obj(self):

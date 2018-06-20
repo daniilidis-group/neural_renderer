@@ -3,7 +3,7 @@ import unittest
 import numpy as np
 from skimage.io import imsave
 
-from .context import neural_renderer
+from context import neural_renderer
 
 
 class TestCore(unittest.TestCase):

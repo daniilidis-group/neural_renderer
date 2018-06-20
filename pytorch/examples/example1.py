@@ -8,7 +8,7 @@ import numpy as np
 import torch
 import tqdm
 
-from .context import neural_renderer
+from context import neural_renderer
 
 
 def main():

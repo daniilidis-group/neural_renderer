@@ -1,6 +1,6 @@
 import unittest
 import torch
-from .context import neural_renderer
+from context import neural_renderer
 
 class TestLighting(unittest.TestCase):
     
