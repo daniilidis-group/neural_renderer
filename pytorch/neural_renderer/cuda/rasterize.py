@@ -7,8 +7,6 @@ import os
 dir_path = os.path.dirname(os.path.realpath(__file__))
 print(dir_path)
 
-# it needs at least cuda 6.0 to compile because of some atomic instructions
-# cuda_cflags = ['-arch=sm_40', '-gencode=arch=compute_60,code=sm_60', '-gencode=arch=compute_70,code=sm_70']
 cuda_cflags = []
 rasterize_cuda = load(
         'rasterize_cuda', [os.path.join(dir_path,'rasterize_cuda.cpp'),
