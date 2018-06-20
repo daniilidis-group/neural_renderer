@@ -99,7 +99,7 @@ class RasterizeFunction(Function):
         # initialize output buffers
         grad_faces = torch.zeros_like(faces, dtype=torch.float32).to(ctx.device).contiguous()
         if ctx.return_rgb:
-            grad_textures = torch.zeros_like(faces, dtype=torch.float32).to(ctx.device).contiguous()
+            grad_textures = torch.zeros_like(textures, dtype=torch.float32).to(ctx.device).contiguous()
         else:
             grad_textures = torch.zeros(1, dtype=torch.float32).to(ctx.device)
         
