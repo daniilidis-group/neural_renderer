@@ -79,17 +79,15 @@ def get_textures(filename_obj, filename_mtl, texture_size):
             if material_name == material_name_f:
                 textures[i, :, :, :, :] = color[None, None, None, :]
 
-    #
     for material_name, filename_texture in texture_filenames.items():
         filename_texture = os.path.join(os.path.dirname(filename_obj), filename_texture)
         image = skimage.io.imread(filename_texture).astype(np.float32) / 255.
+        skimage.io.imsave(material_name+'test.jpg', image)
         # pytorch does not support negative slicing for the moment
-        image = image[::-1, ::1]
+        image = image[::-1, :, :]
         image = torch.from_numpy(image.copy()).cuda()
         is_update = (np.array(material_names) == material_name).astype(np.int32)
         is_update = torch.from_numpy(is_update).cuda()
-        from IPython.core.debugger import Pdb
-        Pdb().set_trace()
         textures = load_textures(image, faces, textures, is_update)
     return textures
 
@@ -130,7 +128,6 @@ def load_obj(filename_obj, normalization=True, texture_size=4, load_texture=Fals
             if line.startswith('mtllib'):
                 filename_mtl = os.path.join(os.path.dirname(filename_obj), line.split()[1])
                 textures = get_textures(filename_obj, filename_mtl, texture_size)
-                print(textures)
         if textures is None:
             raise Exception('Failed to load textures.')
 

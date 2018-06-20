@@ -10,11 +10,12 @@ __global__ void load_textures_cuda_kernel(
     const scalar_t* __restrict__ faces,
     const int32_t* __restrict__ is_update,
     scalar_t* __restrict__ textures, 
+    size_t textures_size,
     size_t texture_size,
     size_t image_height,
     size_t image_width) {
   const int i = blockIdx.x * blockDim.x + threadIdx.x;
-  if (i >= texture_size / 3) {
+  if (i >= textures_size / 3) {
       return;
   }
   const int ts = texture_size;
@@ -66,12 +67,15 @@ at::Tensor load_textures_cuda(
         at::Tensor faces,
         at::Tensor is_update,
         at::Tensor textures) {
+    // textures_size = size of the textures tensor
+    const auto textures_size = textures.numel();
+    // notice that texture_size != texture_size
     const auto texture_size = textures.size(1);
     const auto image_height = image.size(0);
     const auto image_width = image.size(1);
     
     const int threads = 1024;
-    const int blocks = (texture_size / 3 - 1) / threads + 1;
+    const int blocks = (textures_size / 3 - 1) / threads + 1;
 
     AT_DISPATCH_FLOATING_TYPES(image.type(), "load_textures_cuda", ([&] {
       load_textures_cuda_kernel<scalar_t><<<blocks, threads>>>(
@@ -79,6 +83,7 @@ at::Tensor load_textures_cuda(
           faces.data<scalar_t>(),
           is_update.data<int32_t>(),
           textures.data<scalar_t>(),
+          textures_size,
           texture_size,
           image_height,
           image_width);
