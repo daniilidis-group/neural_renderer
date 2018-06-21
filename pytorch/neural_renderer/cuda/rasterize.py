@@ -5,7 +5,6 @@ from torch.utils.cpp_extension import load
 
 import os
 dir_path = os.path.dirname(os.path.realpath(__file__))
-print(dir_path)
 
 cuda_cflags = []
 rasterize_cuda = load(

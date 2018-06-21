@@ -11,22 +11,24 @@ def load_mtl(filename_mtl):
     texture_filenames = {}
     colors = {}
     material_name = ''
-    for line in open(filename_mtl).readlines():
-        if len(line.split()) != 0:
-            if line.split()[0] == 'newmtl':
-                material_name = line.split()[1]
-            if line.split()[0] == 'map_Kd':
-                texture_filenames[material_name] = line.split()[1]
-            if line.split()[0] == 'Kd':
-                colors[material_name] = np.array(list(map(float, line.split()[1:4])))
-                # colors[material_name] = np.array(map(float, line.split()[1:4]))
+    with open(filename_mtl) as f:
+        for line in f.readlines():
+            if len(line.split()) != 0:
+                if line.split()[0] == 'newmtl':
+                    material_name = line.split()[1]
+                if line.split()[0] == 'map_Kd':
+                    texture_filenames[material_name] = line.split()[1]
+                if line.split()[0] == 'Kd':
+                    colors[material_name] = np.array(list(map(float, line.split()[1:4])))
     return colors, texture_filenames
 
 
 def get_textures(filename_obj, filename_mtl, texture_size):
     # load vertices
     vertices = []
-    for line in open(filename_obj).readlines():
+    with open(filename_obj) as f:
+        lines = f.readlines()
+    for line in lines:
         if len(line.split()) == 0:
             continue
         if line.split()[0] == 'vt':
@@ -37,7 +39,7 @@ def get_textures(filename_obj, filename_mtl, texture_size):
     faces = []
     material_names = []
     material_name = ''
-    for line in open(filename_obj).readlines():
+    for line in lines:
         if len(line.split()) == 0:
             continue
         if line.split()[0] == 'f':
@@ -65,7 +67,6 @@ def get_textures(filename_obj, filename_mtl, texture_size):
     faces = torch.from_numpy(faces).cuda()
     faces[1 < faces] = faces[1 < faces] % 1
 
-    #
     colors, texture_filenames = load_mtl(filename_mtl)
 
     textures = torch.zeros(faces.shape[0], texture_size, texture_size, texture_size, 3, dtype=torch.float32) + 0.5
@@ -97,7 +98,10 @@ def load_obj(filename_obj, normalization=True, texture_size=4, load_texture=Fals
 
     # load vertices
     vertices = []
-    for line in open(filename_obj).readlines():
+    with open(filename_obj) as f:
+        lines = f.readlines()
+
+    for line in lines:
         if len(line.split()) == 0:
             continue
         if line.split()[0] == 'v':
@@ -106,7 +110,7 @@ def load_obj(filename_obj, normalization=True, texture_size=4, load_texture=Fals
 
     # load faces
     faces = []
-    for line in open(filename_obj).readlines():
+    for line in lines:
         if len(line.split()) == 0:
             continue
         if line.split()[0] == 'f':
@@ -122,7 +126,7 @@ def load_obj(filename_obj, normalization=True, texture_size=4, load_texture=Fals
     # load textures
     textures = None
     if load_texture:
-        for line in open(filename_obj).readlines():
+        for line in lines:
             if line.startswith('mtllib'):
                 filename_mtl = os.path.join(os.path.dirname(filename_obj), line.split()[1])
                 textures = get_textures(filename_obj, filename_mtl, texture_size)
