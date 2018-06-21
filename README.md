@@ -9,14 +9,15 @@ For more details, please visit [project page](http://hiroharu-kato.com/projects_
 
 This repository only contains the core component and simple examples. Related repositories are:
 
-* Neural Renderer (this repository)
+* PyTorch Neural Renderer (this repository)
+    * [Chainer Neural Renderer](https://github.com/hiroharu-kato/neural_renderer)
     * [Single-image 3D mesh reconstruction](https://github.com/hiroharu-kato/mesh_reconstruction)
     * [2D-to-3D style transfer](https://github.com/hiroharu-kato/style_transfer_3d)
     * [3D DeepDream](https://github.com/hiroharu-kato/deep_dream_3d)
 
 ## Installation
 ```
-sudo python setup.py install
+sudo python3 setup.py install
 ```
 
 ## Running examples
