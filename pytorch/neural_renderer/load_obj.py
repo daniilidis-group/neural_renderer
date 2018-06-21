@@ -4,7 +4,7 @@ import torch
 import numpy as np
 from skimage.io import imread
 
-from neural_renderer.cuda import load_textures_cuda
+import load_textures_cuda
 
 def load_mtl(filename_mtl):
     # load color (Kd) and filename of textures from *.mtl

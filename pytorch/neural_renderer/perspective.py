@@ -1,5 +1,6 @@
-import torch
 import math
+
+import torch
 
 def perspective(vertices, angle=30.):
         assert(vertices.ndimension() == 3)
