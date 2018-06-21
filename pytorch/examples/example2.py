@@ -1,9 +1,9 @@
 """
 Example 2. Optimizing vertices.
 """
+import os
 import argparse
 import glob
-import os
 
 import torch
 import torch.nn as nn
@@ -12,8 +12,10 @@ from skimage.io import imread, imsave
 import tqdm
 import imageio
 
-from context import neural_renderer
+import neural_renderer
 
+current_dir = os.path.dirname(os.path.realpath(__file__))
+data_dir = os.path.join(current_dir, 'data')
 
 class Model(nn.Module):
     def __init__(self, filename_obj, filename_ref):
@@ -44,9 +46,9 @@ class Model(nn.Module):
         return loss
 
 
-def make_gif(working_directory, filename):
+def make_gif(filename):
     with imageio.get_writer(filename, mode='I') as writer:
-        for filename in glob.glob('%s/_tmp_*.png' % working_directory):
+        for filename in sorted(glob.glob('/tmp/_tmp_*.png')):
             writer.append_data(imageio.imread(filename))
             os.remove(filename)
     writer.close()
@@ -54,35 +56,32 @@ def make_gif(working_directory, filename):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-io', '--filename_obj', type=str, default='./data/teapot.obj')
-    parser.add_argument('-ir', '--filename_ref', type=str, default='./data/example2_ref.png')
+    parser.add_argument('-io', '--filename_obj', type=str, default=os.path.join(data_dir, 'teapot.obj'))
+    parser.add_argument('-ir', '--filename_ref', type=str, default=os.path.join(data_dir, 'example2_ref.png'))
     parser.add_argument(
-        '-oo', '--filename_output_optimization', type=str, default='./data/example2_optimization.gif')
+        '-oo', '--filename_output_optimization', type=str, default=os.path.join(data_dir, 'example2_optimization.gif'))
     parser.add_argument(
-        '-or', '--filename_output_result', type=str, default='./data/example2_result.gif')
+        '-or', '--filename_output_result', type=str, default=os.path.join(data_dir, 'example2_result.gif'))
     parser.add_argument('-g', '--gpu', type=int, default=0)
     args = parser.parse_args()
-    working_directory = os.path.dirname(args.filename_output_result)
 
     model = Model(args.filename_obj, args.filename_ref)
     model.cuda()
 
     optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, model.parameters()))
     # optimizer.setup(model)
-    loop = tqdm.tqdm(range(10))
-    with torch.autograd.profiler.profile() as prof:
-        for i in loop:
-            loop.set_description('Optimizing')
-            # optimizer.target.cleargrads()
-            optimizer.zero_grad()
-            loss = model()
-            loss.backward()
-            optimizer.step()
-            images = model.renderer.render_silhouettes(model.vertices, model.faces)
-            image = images.detach().cpu().numpy()[0]
-            imsave('%s/_tmp_%04d.png' % (working_directory, i), image)
-    print(prof.key_averages())
-    make_gif(working_directory, args.filename_output_optimization)
+    loop = tqdm.tqdm(range(300))
+    for i in loop:
+        loop.set_description('Optimizing')
+        # optimizer.target.cleargrads()
+        optimizer.zero_grad()
+        loss = model()
+        loss.backward()
+        optimizer.step()
+        images = model.renderer.render_silhouettes(model.vertices, model.faces)
+        image = images.detach().cpu().numpy()[0]
+        imsave('/tmp/_tmp_%04d.png' % i, image)
+    make_gif(args.filename_output_optimization)
 
     # draw object
     loop = tqdm.tqdm(range(0, 360, 4))
@@ -91,8 +90,8 @@ def main():
         model.renderer.eye = neural_renderer.get_points_from_angles(2.732, 0, azimuth)
         images = model.renderer.render(model.vertices, model.faces, model.textures)
         image = images.detach().cpu().numpy()[0].transpose((1, 2, 0))
-        imsave('%s/_tmp_%04d.png' % (working_directory, num), image)
-    make_gif(working_directory, args.filename_output_result)
+        imsave('/tmp/_tmp_%04d.png' % num, image)
+    make_gif(args.filename_output_result)
 
 
 if __name__ == '__main__':

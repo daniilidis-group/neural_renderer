@@ -1,9 +1,9 @@
 """
 Example 4. Finding camera parameters.
 """
+import os
 import argparse
 import glob
-import os
 
 import torch
 import torch.nn as nn
@@ -12,8 +12,10 @@ from skimage.io import imread, imsave
 import tqdm
 import imageio
 
-from context import neural_renderer
+import neural_renderer
 
+current_dir = os.path.dirname(os.path.realpath(__file__))
+data_dir = os.path.join(current_dir, 'data')
 
 class Model(nn.Module):
     def __init__(self, filename_obj, filename_ref=None):
@@ -29,7 +31,7 @@ class Model(nn.Module):
         self.register_buffer('textures', textures)
 
         # load reference image
-        image_ref = torch.from_numpy((imread(filename_ref).max(-1) != 0).astype('float32'))
+        image_ref = torch.from_numpy((imread(filename_ref).max(-1) != 0).astype(np.float32))
         self.register_buffer('image_ref', image_ref)
 
         # camera parameters
@@ -46,9 +48,9 @@ class Model(nn.Module):
         return loss
 
 
-def make_gif(working_directory, filename):
+def make_gif(filename):
     with imageio.get_writer(filename, mode='I') as writer:
-        for filename in glob.glob('%s/_tmp_*.png' % working_directory):
+        for filename in sorted(glob.glob('/tmp/_tmp_*.png')):
             writer.append_data(imread(filename))
             os.remove(filename)
     writer.close()
@@ -66,13 +68,12 @@ def make_reference_image(filename_ref, filename_obj):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-io', '--filename_obj', type=str, default='./data/teapot.obj')
-    parser.add_argument('-ir', '--filename_ref', type=str, default='./data/example4_ref.png')
-    parser.add_argument('-or', '--filename_output', type=str, default='./data/example4_result.gif')
+    parser.add_argument('-io', '--filename_obj', type=str, default=os.path.join(data_dir, 'teapot.obj'))
+    parser.add_argument('-ir', '--filename_ref', type=str, default=os.path.join(data_dir, 'example4_ref.png'))
+    parser.add_argument('-or', '--filename_output', type=str, default=os.path.join(data_dir, 'example4_result.gif'))
     parser.add_argument('-mr', '--make_reference_image', type=int, default=0)
     parser.add_argument('-g', '--gpu', type=int, default=0)
     args = parser.parse_args()
-    working_directory = os.path.dirname(args.filename_output)
 
     if args.make_reference_image:
         make_reference_image(args.filename_ref, args.filename_obj)
@@ -90,11 +91,11 @@ def main():
         optimizer.step()
         images = model.renderer.render(model.vertices, model.faces, torch.tanh(model.textures))
         image = images.detach().cpu().numpy()[0].transpose(1,2,0)
-        imsave('%s/_tmp_%04d.png' % (working_directory, i), image)
+        imsave('/tmp/_tmp_%04d.png' % i, image)
         loop.set_description('Optimizing (loss %.4f)' % loss.data)
-        if loss.data < 70:
+        if loss.item() < 70:
             break
-    make_gif(working_directory, args.filename_output)
+    make_gif(args.filename_output)
 
 
 if __name__ == '__main__':

@@ -1,20 +1,24 @@
 """
 Example 1. Drawing a teapot from multiple viewpoints.
 """
+import os
 import argparse
+
+import torch
+import numpy as np
+import tqdm
 import imageio
 
-import numpy as np
-import torch
-import tqdm
+import neural_renderer
 
-from context import neural_renderer
+current_dir = os.path.dirname(os.path.realpath(__file__))
+data_dir = os.path.join(current_dir, 'data')
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-i', '--filename_input', type=str, default='./data/teapot.obj')
-    parser.add_argument('-o', '--filename_output', type=str, default='./data/example1.gif')
+    parser.add_argument('-i', '--filename_input', type=str, default=os.path.join(data_dir, 'teapot.obj'))
+    parser.add_argument('-o', '--filename_output', type=str, default=os.path.join(data_dir, 'example1.gif'))
     parser.add_argument('-g', '--gpu', type=int, default=0)
     args = parser.parse_args()
 
