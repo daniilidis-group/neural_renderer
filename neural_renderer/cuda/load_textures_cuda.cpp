@@ -5,8 +5,8 @@
 at::Tensor load_textures_cuda(
         at::Tensor image,
         at::Tensor faces,
-        at::Tensor is_update,
-        at::Tensor textures);
+        at::Tensor textures,
+        at::Tensor is_update);
 
 // C++ interface
 
@@ -18,15 +18,15 @@ at::Tensor load_textures_cuda(
 at::Tensor load_textures(
         at::Tensor image,
         at::Tensor faces,
-        at::Tensor is_update,
-        at::Tensor textures) {
+        at::Tensor textures,
+        at::Tensor is_update) {
 
     CHECK_INPUT(image);
     CHECK_INPUT(faces);
     CHECK_INPUT(is_update);
     CHECK_INPUT(textures);
 
-    return load_textures_cuda(image, faces, is_update, textures);
+    return load_textures_cuda(image, faces, textures, is_update);
                                       
 }
 

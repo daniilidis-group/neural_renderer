@@ -65,8 +65,8 @@ __global__ void load_textures_cuda_kernel(
 at::Tensor load_textures_cuda(
         at::Tensor image,
         at::Tensor faces,
-        at::Tensor is_update,
-        at::Tensor textures) {
+        at::Tensor textures,
+        at::Tensor is_update) {
     // textures_size = size of the textures tensor
     const auto textures_size = textures.numel();
     // notice that texture_size != texture_size

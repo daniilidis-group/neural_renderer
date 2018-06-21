@@ -129,7 +129,7 @@ def load_obj(filename_obj, normalization=True, texture_size=4, load_texture=Fals
         for line in lines:
             if line.startswith('mtllib'):
                 filename_mtl = os.path.join(os.path.dirname(filename_obj), line.split()[1])
-                textures = get_textures(filename_obj, filename_mtl, texture_size)
+                textures = load_textures(filename_obj, filename_mtl, texture_size)
         if textures is None:
             raise Exception('Failed to load textures.')
 
