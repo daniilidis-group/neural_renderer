@@ -1,8 +1,41 @@
 import os
 
-import scipy.misc
+import torch
+from skimage import imsave
 
-from .cuda.create_texture_image import create_texture_image
+
+from neural_renderer.cuda import create_texture_image_cuda
+
+
+def create_texture_image(textures, texture_size_out=16):
+    num_faces, texture_size_in = textures.shape[:2]
+    tile_width = int((num_faces - 1.) ** 0.5) + 1
+    tile_height = int((num_faces - 1.) / tile_width) + 1
+    image = torch.zeros(tile_height * texture_size_out, tile_width * texture_size_out, 3, dtype=torch.float32)
+    vertices = torch.zeros((num_faces, 3, 2), dtype=torch.float32)  # [:, :, XY]
+    face_nums = torch.arange(num_faces)
+    column = face_nums % tile_width
+    row = face_nums / tile_width
+    vertices[:, 0, 0] = column * texture_size_out
+    vertices[:, 0, 1] = row * texture_size_out
+    vertices[:, 1, 0] = column * texture_size_out
+    vertices[:, 1, 1] = (row + 1) * texture_size_out - 1
+    vertices[:, 2, 0] = (column + 1) * texture_size_out - 1
+    vertices[:, 2, 1] = (row + 1) * texture_size_out - 1
+    image = image.cuda()
+    vertices = vertices.cuda()
+    textures = textures.cuda()
+    image = create_texture_image_cuda.create_texture_image(vertices, textures, image, 1e-5)
+    image = torch.ones_like(image)
+    
+    vertices[:, :, 0] /= (image.shape[1] - 1)
+    vertices[:, :, 1] /= (image.shape[0] - 1)
+    
+    image = image.detach().cpu().numpy()
+    vertices = vertices.detach().cpu().numpy()
+    image = image[::-1, ::1]
+
+    return image, vertices
 
 
 def save_obj(filename, vertices, faces, textures=None):
@@ -14,7 +47,7 @@ def save_obj(filename, vertices, faces, textures=None):
         filename_texture = filename[:-4] + '.png'
         material_name = 'material_1'
         texture_image, vertices_textures = create_texture_image(textures)
-        scipy.misc.toimage(texture_image, cmin=0, cmax=1).save(filename_texture)
+        imsave(filename_texture, texture_image)
 
     faces = faces.detach().cpu().numpy()
 
