@@ -23,11 +23,6 @@ ext_modules=[
         'neural_renderer/cuda/create_texture_image_cuda_kernel.cu',
         ]),
     ]
-from IPython.core.debugger import Pdb
-Pdb().set_trace()
-
-# packages=['neural_renderer', 'neural_renderer.cuda', 'neural_renderer.cuda.load_textures',
-#           'neural_renderer.cuda.rasterize', 'neural_renderer.cuda.create_texture_image'],
 
 INSTALL_REQUIREMENTS = ['numpy', 'torch', 'torchvision', 'scikit-image', 'tqdm', 'imageio']
 
