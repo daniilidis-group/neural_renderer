@@ -30,6 +30,7 @@ at::Tensor load_textures(
                                       
 }
 
-PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
-    m.def("load_textures", &load_textures_cuda, "LOAD_TEXTURES (CUDA)");
+//PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
+PYBIND11_MODULE(load_textures, m) {
+    m.def("load_textures", &load_textures, "LOAD_TEXTURES (CUDA)");
 }

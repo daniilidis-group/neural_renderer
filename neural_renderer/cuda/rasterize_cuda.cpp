@@ -104,7 +104,6 @@ std::vector<at::Tensor> forward_texture_sampling(
         at::Tensor sampling_index_map,
         at::Tensor sampling_weight_map,
         int image_size,
-        int texture_size,
         float eps) {
 
     CHECK_INPUT(faces);
@@ -191,10 +190,11 @@ at::Tensor backward_depth_map(
                                    image_size);
 }
 
-PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
+// PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
+PYBIND11_MODULE(rasterize, m) {
     m.def("forward_face_index_map", &forward_face_index_map, "FORWARD_FACE_INDEX_MAP (CUDA)");
-    m.def("forward_texture_sampling", &forward_texture_sampling_cuda, "FORWARD_TEXTURE_SAMPLING (CUDA)");
-    m.def("backward_pixel_map", &backward_pixel_map_cuda, "BACKWARD_PIXEL_MAP (CUDA)");
-    m.def("backward_textures", &backward_textures_cuda, "BACKWARD_TEXTURES (CUDA)");
-    m.def("backward_depth_map", &backward_depth_map_cuda, "BACKWARD_DEPTH_MAP (CUDA)");
+    m.def("forward_texture_sampling", &forward_texture_sampling, "FORWARD_TEXTURE_SAMPLING (CUDA)");
+    m.def("backward_pixel_map", &backward_pixel_map, "BACKWARD_PIXEL_MAP (CUDA)");
+    m.def("backward_textures", &backward_textures, "BACKWARD_TEXTURES (CUDA)");
+    m.def("backward_depth_map", &backward_depth_map, "BACKWARD_DEPTH_MAP (CUDA)");
 }

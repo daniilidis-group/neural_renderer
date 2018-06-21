@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Function
 
-import rasterize_cuda
+import neural_renderer.cuda.rasterize as rasterize_cuda
 
 DEFAULT_IMAGE_SIZE = 256
 DEFAULT_ANTI_ALIASING = True
@@ -60,10 +60,12 @@ class RasterizeFunction(Function):
         else:
             face_inv_map = torch.cuda.FloatTensor(1).fill_(0)
 
+
         face_index_map, weight_map, depth_map, face_inv_map =\
             RasterizeFunction.forward_face_index_map(ctx, faces, face_index_map,
                                                      weight_map, depth_map,
                                                      face_inv_map)
+
         rgb_map, sampling_index_map, sampling_weight_map =\
                 RasterizeFunction.forward_texture_sampling(ctx, faces, textures,
                                                            face_index_map, weight_map,
@@ -101,7 +103,7 @@ class RasterizeFunction(Function):
         if ctx.return_rgb:
             grad_textures = torch.zeros_like(textures, dtype=torch.float32).to(ctx.device).contiguous()
         else:
-            grad_textures = torch.FloatTensor(1).fill_(0.0)
+            grad_textures = torch.cuda.FloatTensor(1).fill_(0.0)
         
         # get grad_outputs
         if ctx.return_rgb:
@@ -110,21 +112,21 @@ class RasterizeFunction(Function):
             else:
                 grad_rgb_map = torch.zeros_like(rgb_map)
         else:
-            grad_rgb_map = torch.FloatTensor(1).fill_(0.0)
+            grad_rgb_map = torch.cuda.FloatTensor(1).fill_(0.0)
         if ctx.return_alpha:
             if grad_alpha_map is not None:
                 grad_alpha_map = grad_alpha_map.contiguous()
             else:
                 grad_alpha_map = torch.zeros_like(alpha_map)
         else:
-            grad_alpha_map = torch.FloatTensor(1).fill_(0.0)
+            grad_alpha_map = torch.cuda.FloatTensor(1).fill_(0.0)
         if ctx.return_depth:
             if grad_depth_map is not None:
                 grad_depth_map = grad_depth_map.contiguous()
             else:
                 grad_depth_map = torch.zeros_like(ctx.depth_map)
         else:
-            grad_depth_map = torch.FloatTensor(1).fill_(0.0)
+            grad_depth_map = torch.cuda.FloatTensor(1).fill_(0.0)
 
         # backward pass
         grad_faces = RasterizeFunction.backward_pixel_map(
