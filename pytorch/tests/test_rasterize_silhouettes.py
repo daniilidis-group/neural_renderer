@@ -1,11 +1,15 @@
 import unittest
+import os
 
 import torch
 import numpy as np
-from skimage.io import imread, imsave
+from skimage.io import imread
 
-from context import neural_renderer
+import neural_renderer
 import utils
+
+current_dir = os.path.dirname(os.path.realpath(__file__))
+data_dir = os.path.join(current_dir, 'data')
 
 
 class TestRasterizeSilhouettes(unittest.TestCase):
@@ -25,8 +29,8 @@ class TestRasterizeSilhouettes(unittest.TestCase):
         image = images[2]
 
         # load reference image by blender
-        ref = imread('../../chainer/tests/data/teapot_blender.png')
-        ref = (ref.min(-1) != 255).astype('float32')
+        ref = imread(os.path.join(data_dir, 'teapot_blender.png'))
+        ref = (ref.min(-1) != 255).astype(np.float32)
 
         assert(np.allclose(ref, image))
 
@@ -51,9 +55,9 @@ class TestRasterizeSilhouettes(unittest.TestCase):
         renderer.anti_aliasing = False
         renderer.perspective = False
 
-        vertices = torch.from_numpy(np.array(vertices, 'float32')).cuda()
-        faces = torch.from_numpy(np.array(faces, 'int32')).cuda()
-        grad_ref = torch.from_numpy(np.array(grad_ref, 'float32')).cuda()
+        vertices = torch.from_numpy(np.array(vertices, np.float32)).cuda()
+        faces = torch.from_numpy(np.array(faces, np.int32)).cuda()
+        grad_ref = torch.from_numpy(np.array(grad_ref, np.float32)).cuda()
         vertices, faces, grad_ref = utils.to_minibatch((vertices, faces, grad_ref))
         vertices.requires_grad = True
         images = renderer.render_silhouettes(vertices, faces)
@@ -83,9 +87,9 @@ class TestRasterizeSilhouettes(unittest.TestCase):
         renderer.anti_aliasing = False
         renderer.perspective = False
 
-        vertices = torch.from_numpy(np.array(vertices, 'float32')).cuda()
-        faces = torch.from_numpy(np.array(faces, 'int32')).cuda()
-        grad_ref = torch.from_numpy(np.array(grad_ref, 'float32')).cuda()
+        vertices = torch.from_numpy(np.array(vertices, np.float32)).cuda()
+        faces = torch.from_numpy(np.array(faces, np.int32)).cuda()
+        grad_ref = torch.from_numpy(np.array(grad_ref, np.float32)).cuda()
         vertices, faces, grad_ref = utils.to_minibatch((vertices, faces, grad_ref))
         vertices.requires_grad = True
         images = renderer.render_silhouettes(vertices, faces)

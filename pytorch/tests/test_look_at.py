@@ -1,9 +1,9 @@
 import unittest
 
-import numpy as np
 import torch
+import numpy as np
 
-from context import neural_renderer
+import neural_renderer
 
 class TestLookAt(unittest.TestCase):
     def test_case1(self):

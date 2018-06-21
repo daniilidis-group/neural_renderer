@@ -1,12 +1,15 @@
 import unittest
+import os
 
-import numpy as np
 import torch
+import numpy as np
 from skimage.io import imread, imsave
 
-from context import neural_renderer
+import neural_renderer
 import utils
 
+current_dir = os.path.dirname(os.path.realpath(__file__))
+data_dir = os.path.join(current_dir, 'data')
 
 class TestRasterize(unittest.TestCase):
     def test_forward_case1(self):
@@ -29,7 +32,7 @@ class TestRasterize(unittest.TestCase):
         image = images[2]
         image = image.transpose((1, 2, 0))
 
-        imsave('test_rasterize1.png', image)
+        imsave(os.path.join(data_dir, 'test_rasterize1.png'), image)
 
     def test_forward_case2(self):
         """Rendering a teapot with anti-aliasing and another viewpoint."""
@@ -50,7 +53,7 @@ class TestRasterize(unittest.TestCase):
         image = images[2]
         image = image.transpose((1, 2, 0))
 
-        imsave('test_rasterize2.png', image)
+        imsave(os.path.join(data_dir, 'test_rasterize2.png'), image)
 
     def test_forward_case3(self):
         """Whether a silhouette by neural renderer matches that by Blender."""
@@ -73,7 +76,7 @@ class TestRasterize(unittest.TestCase):
         image = images[2].mean(0)
 
         # load reference image by blender
-        ref = imread('../../chainer/tests/data/teapot_blender.png')
+        ref = imread(os.path.join(data_dir, 'teapot_blender.png'))
         ref = (ref.min(axis=-1) != 255).astype(np.float32)
 
         assert(np.allclose(ref, image))
