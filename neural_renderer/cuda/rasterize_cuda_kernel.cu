@@ -745,7 +745,7 @@ at::Tensor backward_textures_cuda(
     const auto image_size = face_index_map.size(1);
     const auto texture_size = grad_textures.size(2);
     const int threads = 1024;
-    const int blocks = (batch_size * image_size * image_size - 1) / threads;
+    const int blocks = (batch_size * image_size * image_size - 1) / threads + 1;
 
     AT_DISPATCH_FLOATING_TYPES(sampling_weight_map.type(), "backward_textures_cuda", ([&] {
       backward_textures_cuda_kernel<scalar_t><<<blocks, threads>>>(
@@ -779,7 +779,7 @@ at::Tensor backward_depth_map_cuda(
     const auto batch_size = faces.size(0);
     const auto num_faces = faces.size(1);
     const int threads = 1024;
-    const dim3 blocks = (batch_size * image_size * image_size - 1) / threads;
+    const int blocks = (batch_size * image_size * image_size - 1) / threads + 1;
 
     AT_DISPATCH_FLOATING_TYPES(faces.type(), "backward_depth_map_cuda", ([&] {
       backward_depth_map_cuda_kernel<scalar_t><<<blocks, threads>>>(
