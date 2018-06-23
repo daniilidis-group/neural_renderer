@@ -12,7 +12,7 @@ from skimage.io import imread, imsave
 import tqdm
 import imageio
 
-import neural_renderer
+import neural_renderer as nr
 
 current_dir = os.path.dirname(os.path.realpath(__file__))
 data_dir = os.path.join(current_dir, 'data')
@@ -20,7 +20,7 @@ data_dir = os.path.join(current_dir, 'data')
 class Model(nn.Module):
     def __init__(self, filename_obj, filename_ref):
         super(Model, self).__init__()
-        vertices, faces = neural_renderer.load_obj(filename_obj)
+        vertices, faces = nr.load_obj(filename_obj)
         self.register_buffer('vertices', vertices[None, :, :])
         self.register_buffer('faces', faces[None, :, :])
 
@@ -34,7 +34,7 @@ class Model(nn.Module):
         self.register_buffer('image_ref', image_ref)
 
         # setup renderer
-        renderer = neural_renderer.Renderer()
+        renderer = nr.Renderer()
         renderer.perspective = False
         renderer.light_intensity_directional = 0.0
         renderer.light_intensity_ambient = 1.0
@@ -42,7 +42,7 @@ class Model(nn.Module):
 
 
     def forward(self):
-        self.renderer.eye = neural_renderer.get_points_from_angles(2.732, 0, np.random.uniform(0, 360))
+        self.renderer.eye = nr.get_points_from_angles(2.732, 0, np.random.uniform(0, 360))
         image = self.renderer.render(self.vertices, self.faces, torch.tanh(self.textures))
         loss = torch.sum((image - self.image_ref) ** 2)
         return loss
@@ -80,7 +80,7 @@ def main():
     loop = tqdm.tqdm(range(0, 360, 4))
     for num, azimuth in enumerate(loop):
         loop.set_description('Drawing')
-        model.renderer.eye = neural_renderer.get_points_from_angles(2.732, 0, azimuth)
+        model.renderer.eye = nr.get_points_from_angles(2.732, 0, azimuth)
         images = model.renderer.render(model.vertices, model.faces, torch.tanh(model.textures))
         image = images.detach().cpu().numpy()[0].transpose((1, 2, 0))
         imsave('/tmp/_tmp_%04d.png' % num, image)

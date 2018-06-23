@@ -12,7 +12,7 @@ from skimage.io import imread, imsave
 import tqdm
 import imageio
 
-import neural_renderer
+import neural_renderer as nr
 
 current_dir = os.path.dirname(os.path.realpath(__file__))
 data_dir = os.path.join(current_dir, 'data')
@@ -21,7 +21,7 @@ class Model(nn.Module):
     def __init__(self, filename_obj, filename_ref=None):
         super(Model, self).__init__()
         # load .obj
-        vertices, faces = neural_renderer.load_obj(filename_obj)
+        vertices, faces = nr.load_obj(filename_obj)
         self.register_buffer('vertices', vertices[None, :, :])
         self.register_buffer('faces', faces[None, :, :])
 
@@ -38,7 +38,7 @@ class Model(nn.Module):
         self.camera_position = nn.Parameter(torch.from_numpy(np.array([6, 10, -14], dtype=np.float32)))
 
         # setup renderer
-        renderer = neural_renderer.Renderer()
+        renderer = nr.Renderer()
         renderer.eye = self.camera_position
         self.renderer = renderer
 
@@ -60,7 +60,7 @@ def make_reference_image(filename_ref, filename_obj):
     model = Model(filename_obj)
     model.cuda()
 
-    model.renderer.eye = neural_renderer.get_points_from_angles(2.732, 30, -15)
+    model.renderer.eye = nr.get_points_from_angles(2.732, 30, -15)
     images = model.renderer.render(model.vertices, model.faces, torch.tanh(model.textures))
     image = images.detach().cpu().numpy()[0]
     imsave(filename_ref, image)

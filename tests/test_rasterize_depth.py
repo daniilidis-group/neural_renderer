@@ -5,7 +5,7 @@ import torch
 import numpy as np
 from skimage.io import imread
 
-import neural_renderer
+import neural_renderer as nr
 import utils
 
 current_dir = os.path.dirname(os.path.realpath(__file__))
@@ -19,7 +19,7 @@ class TestRasterizeDepth(unittest.TestCase):
         vertices, faces, _ = utils.load_teapot_batch()
 
         # create renderer
-        renderer = neural_renderer.Renderer()
+        renderer = nr.Renderer()
         renderer.image_size = 256
         renderer.anti_aliasing = False
 
@@ -39,7 +39,7 @@ class TestRasterizeDepth(unittest.TestCase):
         vertices, faces, _ = utils.load_teapot_batch()
 
         # create renderer
-        renderer = neural_renderer.Renderer()
+        renderer = nr.Renderer()
         renderer.image_size = 256
         renderer.anti_aliasing = False
 
@@ -60,7 +60,7 @@ class TestRasterizeDepth(unittest.TestCase):
             [0.8, 0.8, 0.5]]
         faces = [[0, 1, 2]]
 
-        renderer = neural_renderer.Renderer()
+        renderer = nr.Renderer()
         renderer.image_size = 64
         renderer.anti_aliasing = False
         renderer.perspective = False

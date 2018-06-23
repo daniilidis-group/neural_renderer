@@ -2,8 +2,6 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 
-import neural_renderer
-
 
 def look_at(vertices, eye, at=None, up=None):
     """

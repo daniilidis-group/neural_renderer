@@ -5,7 +5,7 @@ import torch
 import numpy as np
 from skimage.io import imread
 
-import neural_renderer
+import neural_renderer as nr
 import utils
 
 current_dir = os.path.dirname(os.path.realpath(__file__))
@@ -20,7 +20,7 @@ class TestRasterizeSilhouettes(unittest.TestCase):
         vertices, faces, _ = utils.load_teapot_batch()
 
         # create renderer
-        renderer = neural_renderer.Renderer()
+        renderer = nr.Renderer()
         renderer.image_size = 256
         renderer.anti_aliasing = False
 
@@ -50,7 +50,7 @@ class TestRasterizeSilhouettes(unittest.TestCase):
             [0., 0., 0.],
         ]
 
-        renderer = neural_renderer.Renderer()
+        renderer = nr.Renderer()
         renderer.image_size = 64
         renderer.anti_aliasing = False
         renderer.perspective = False
@@ -82,7 +82,7 @@ class TestRasterizeSilhouettes(unittest.TestCase):
             [3.00094461, - 1.55173182, 0.],
         ]
 
-        renderer = neural_renderer.Renderer()
+        renderer = nr.Renderer()
         renderer.image_size = 64
         renderer.anti_aliasing = False
         renderer.perspective = False

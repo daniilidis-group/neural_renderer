@@ -2,7 +2,7 @@ import unittest
 
 import torch
 
-import neural_renderer
+import neural_renderer as nr
 
 class TestLighting(unittest.TestCase):
     
@@ -10,7 +10,7 @@ class TestLighting(unittest.TestCase):
         """Test whether it is executable."""
         faces = torch.randn(64, 16, 3, 3, dtype=torch.float32)
         textures = torch.randn(64, 16, 8, 8, 8, 3, dtype=torch.float32)
-        neural_renderer.lighting(faces, textures)
+        nr.lighting(faces, textures)
 
 if __name__ == '__main__':
     unittest.main()

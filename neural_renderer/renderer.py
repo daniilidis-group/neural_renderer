@@ -2,7 +2,7 @@ import math
 
 import torch
 
-import neural_renderer
+import neural_renderer as nr
 
 
 class Renderer():
@@ -39,17 +39,17 @@ class Renderer():
 
         # viewpoint transformation
         if self.camera_mode == 'look_at':
-            vertices = neural_renderer.look_at(vertices, self.eye)
+            vertices = nr.look_at(vertices, self.eye)
         elif self.camera_mode == 'look':
-            vertices = neural_renderer.look(vertices, self.eye, self.camera_direction)
+            vertices = nr.look(vertices, self.eye, self.camera_direction)
 
         # perspective transformation
         if self.perspective:
-            vertices = neural_renderer.perspective(vertices, angle=self.viewing_angle)
+            vertices = nr.perspective(vertices, angle=self.viewing_angle)
 
         # rasterization
-        faces = neural_renderer.vertices_to_faces(vertices, faces)
-        images = neural_renderer.rasterize_silhouettes(faces, self.image_size, self.anti_aliasing)
+        faces = nr.vertices_to_faces(vertices, faces)
+        images = nr.rasterize_silhouettes(faces, self.image_size, self.anti_aliasing)
         return images
 
     def render_depth(self, vertices, faces):
@@ -59,17 +59,17 @@ class Renderer():
 
         # viewpoint transformation
         if self.camera_mode == 'look_at':
-            vertices = neural_renderer.look_at(vertices, self.eye)
+            vertices = nr.look_at(vertices, self.eye)
         elif self.camera_mode == 'look':
-            vertices = neural_renderer.look(vertices, self.eye, self.camera_direction)
+            vertices = nr.look(vertices, self.eye, self.camera_direction)
 
         # perspective transformation
         if self.perspective:
-            vertices = neural_renderer.perspective(vertices, angle=self.viewing_angle)
+            vertices = nr.perspective(vertices, angle=self.viewing_angle)
 
         # rasterization
-        faces = neural_renderer.vertices_to_faces(vertices, faces)
-        images = neural_renderer.rasterize_depth(faces, self.image_size, self.anti_aliasing)
+        faces = nr.vertices_to_faces(vertices, faces)
+        images = nr.rasterize_depth(faces, self.image_size, self.anti_aliasing)
         return images
 
     def render(self, vertices, faces, textures):
@@ -79,8 +79,8 @@ class Renderer():
             textures = torch.cat((textures, textures.permute((0, 1, 4, 3, 2, 5))), dim=1)
 
         # lighting
-        faces_lighting = neural_renderer.vertices_to_faces(vertices, faces)
-        textures = neural_renderer.lighting(
+        faces_lighting = nr.vertices_to_faces(vertices, faces)
+        textures = nr.lighting(
             faces_lighting,
             textures,
             self.light_intensity_ambient,
@@ -91,17 +91,17 @@ class Renderer():
 
         # viewpoint transformation
         if self.camera_mode == 'look_at':
-            vertices = neural_renderer.look_at(vertices, self.eye)
+            vertices = nr.look_at(vertices, self.eye)
         elif self.camera_mode == 'look':
-            vertices = neural_renderer.look(vertices, self.eye, self.camera_direction)
+            vertices = nr.look(vertices, self.eye, self.camera_direction)
 
         # perspective transformation
         if self.perspective:
-            vertices = neural_renderer.perspective(vertices, angle=self.viewing_angle)
+            vertices = nr.perspective(vertices, angle=self.viewing_angle)
 
         # rasterization
-        faces = neural_renderer.vertices_to_faces(vertices, faces)
-        images = neural_renderer.rasterize(
+        faces = nr.vertices_to_faces(vertices, faces)
+        images = nr.rasterize(
             faces, textures, self.image_size, self.anti_aliasing, self.near, self.far, self.rasterizer_eps,
             self.background_color)
         return images

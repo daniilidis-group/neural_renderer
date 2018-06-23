@@ -3,7 +3,7 @@ import unittest
 import torch
 import numpy as np
 
-import neural_renderer
+import neural_renderer as nr
 
 class TestLookAt(unittest.TestCase):
     def test_case1(self):
@@ -21,7 +21,7 @@ class TestLookAt(unittest.TestCase):
         vertices = vertices[None, None, :]
         for e, a in zip(eyes, answers):
             eye = np.array(e, np.float32)
-            transformed = neural_renderer.look_at(vertices, eye)
+            transformed = nr.look_at(vertices, eye)
             assert(np.allclose(transformed.data.squeeze().numpy(), np.array(a)))
 
 if __name__ == '__main__':

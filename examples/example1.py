@@ -9,7 +9,7 @@ import numpy as np
 import tqdm
 import imageio
 
-import neural_renderer
+import neural_renderer as nr
 
 current_dir = os.path.dirname(os.path.realpath(__file__))
 data_dir = os.path.join(current_dir, 'data')
@@ -28,7 +28,7 @@ def main():
     texture_size = 2
 
     # load .obj
-    vertices, faces = neural_renderer.load_obj(args.filename_input)
+    vertices, faces = nr.load_obj(args.filename_input)
     vertices = vertices[None, :, :]  # [num_vertices, XYZ] -> [batch_size=1, num_vertices, XYZ]
     faces = faces[None, :, :]  # [num_faces, 3] -> [batch_size=1, num_faces, 3]
 
@@ -38,14 +38,14 @@ def main():
     # to gpu
 
     # create renderer
-    renderer = neural_renderer.Renderer()
+    renderer = nr.Renderer()
 
     # draw object
     loop = tqdm.tqdm(range(0, 360, 4))
     writer = imageio.get_writer(args.filename_output, mode='I')
     for num, azimuth in enumerate(loop):
         loop.set_description('Drawing')
-        renderer.eye = neural_renderer.get_points_from_angles(camera_distance, elevation, azimuth)
+        renderer.eye = nr.get_points_from_angles(camera_distance, elevation, azimuth)
         images = renderer.render(vertices, faces, textures)  # [batch_size, RGB, image_size, image_size]
         image = images.detach().cpu().numpy()[0].transpose((1, 2, 0))  # [image_size, image_size, RGB]
         writer.append_data((255*image).astype(np.uint8))
