@@ -3,10 +3,9 @@ import torch.nn as nn
 
 import neural_renderer as nr
 
-class Mesh(nn.Module):
+class Mesh:
 
     def __init__(self, vertices, faces, textures, texture_size=4):
-        super(Mesh, self).__init__()
         self.vertices = nn.Parameter(vertices)
         faces = self.register_buffer('faces', faces)
         self.num_vertices = self.vertices.shape[0]
@@ -19,6 +18,21 @@ class Mesh(nn.Module):
             self.texture_size = texture_size
         else:
             self.texture_size = textures.shape[0]
+
+    def cuda(self):
+        self.vertices = self.vertices.cuda()
+        self.faces = self.faces.cuda()
+        self.textures = self.textures.cuda()
+
+    def cpu(self):
+        self.vertices = self.vertices.cpu()
+        self.faces = self.faces.cpu()
+        self.textures = self.textures.cpu()
+
+    def to(self, device):
+        self.vertices = self.vertices.to(device)
+        self.faces = self.faces.to(device)
+        self.textures = self.textures.to(device)
 
     @classmethod
     def fromobj(cls, filename_obj, load_textures=False, normalization=True, texture_size=4, load_texture=False):
