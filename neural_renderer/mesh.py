@@ -8,7 +8,7 @@ class Mesh(nn.Module):
     def __init__(self, vertices, faces, textures, texture_size=4):
         super(Mesh, self).__init__()
         self.vertices = nn.Parameter(vertices)
-        faces = register_buffer('faces', faces)
+        faces = self.register_buffer('faces', faces)
         self.num_vertices = self.vertices.shape[0]
         self.num_faces = self.faces.shape[0]
 
