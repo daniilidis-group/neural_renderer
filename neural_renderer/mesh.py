@@ -7,7 +7,7 @@ class Mesh:
 
     def __init__(self, vertices, faces, textures, texture_size=4):
         self.vertices = nn.Parameter(vertices)
-        faces = self.register_buffer('faces', faces)
+        self.faces = faces
         self.num_vertices = self.vertices.shape[0]
         self.num_faces = self.faces.shape[0]
 
