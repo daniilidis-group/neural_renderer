@@ -20,7 +20,7 @@ class TestRasterizeSilhouettes(unittest.TestCase):
         vertices, faces, _ = utils.load_teapot_batch()
 
         # create renderer
-        renderer = nr.Renderer()
+        renderer = nr.Renderer(camera_mode='look_at')
         renderer.image_size = 256
         renderer.anti_aliasing = False
 
@@ -50,7 +50,7 @@ class TestRasterizeSilhouettes(unittest.TestCase):
             [0., 0., 0.],
         ]
 
-        renderer = nr.Renderer()
+        renderer = nr.Renderer(camera_mode='look_at')
         renderer.image_size = 64
         renderer.anti_aliasing = False
         renderer.perspective = False
@@ -82,7 +82,7 @@ class TestRasterizeSilhouettes(unittest.TestCase):
             [3.00094461, - 1.55173182, 0.],
         ]
 
-        renderer = nr.Renderer()
+        renderer = nr.Renderer(camera_mode='look_at')
         renderer.image_size = 64
         renderer.anti_aliasing = False
         renderer.perspective = False

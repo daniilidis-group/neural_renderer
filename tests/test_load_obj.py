@@ -41,7 +41,7 @@ class TestCore(unittest.TestCase):
         assert (vertices.shape[0] == 1292)
 
     def test_texture(self):
-        renderer = nr.Renderer()
+        renderer = nr.Renderer(camera_mode='look_at')
 
         vertices, faces, textures = nr.load_obj(
             os.path.join(data_dir, '1cde62b063e14777c9152a706245d48/model.obj'), load_texture=True)

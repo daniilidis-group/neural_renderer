@@ -22,7 +22,7 @@ class TestRasterize(unittest.TestCase):
         textures = textures.cuda()
 
         # create renderer
-        renderer = nr.Renderer()
+        renderer = nr.Renderer(camera_mode='look_at')
         renderer.image_size = 256
         renderer.anti_aliasing = False
 
@@ -44,7 +44,7 @@ class TestRasterize(unittest.TestCase):
         textures = textures.cuda()
 
         # create renderer
-        renderer = nr.Renderer()
+        renderer = nr.Renderer(camera_mode='look_at')
         renderer.eye = [1, 1, -2.7]
 
         # render
@@ -65,7 +65,7 @@ class TestRasterize(unittest.TestCase):
         textures = textures.cuda()
 
         # create renderer
-        renderer = nr.Renderer()
+        renderer = nr.Renderer(camera_mode='look_at')
         renderer.image_size = 256
         renderer.anti_aliasing = False
         renderer.light_intensity_ambient = 1.0
@@ -97,7 +97,7 @@ class TestRasterize(unittest.TestCase):
             [0., 0., 0.],
         ]
 
-        renderer = nr.Renderer()
+        renderer = nr.Renderer(camera_mode='look_at')
         renderer.image_size = 64
         renderer.anti_aliasing = False
         renderer.perspective = False
@@ -134,7 +134,7 @@ class TestRasterize(unittest.TestCase):
             [3.00094461, - 1.55173182, 0.],
         ]
 
-        renderer = nr.Renderer()
+        renderer = nr.Renderer(camera_mode='look_at')
         renderer.image_size = 64
         renderer.anti_aliasing = False
         renderer.perspective = False

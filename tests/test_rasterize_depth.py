@@ -19,7 +19,7 @@ class TestRasterizeDepth(unittest.TestCase):
         vertices, faces, _ = utils.load_teapot_batch()
 
         # create renderer
-        renderer = nr.Renderer()
+        renderer = nr.Renderer(camera_mode='look_at')
         renderer.image_size = 256
         renderer.anti_aliasing = False
 
@@ -39,7 +39,7 @@ class TestRasterizeDepth(unittest.TestCase):
         vertices, faces, _ = utils.load_teapot_batch()
 
         # create renderer
-        renderer = nr.Renderer()
+        renderer = nr.Renderer(camera_mode='look_at')
         renderer.image_size = 256
         renderer.anti_aliasing = False
 
@@ -60,7 +60,7 @@ class TestRasterizeDepth(unittest.TestCase):
             [0.8, 0.8, 0.5]]
         faces = [[0, 1, 2]]
 
-        renderer = nr.Renderer()
+        renderer = nr.Renderer(camera_mode='look_at')
         renderer.image_size = 64
         renderer.anti_aliasing = False
         renderer.perspective = False
