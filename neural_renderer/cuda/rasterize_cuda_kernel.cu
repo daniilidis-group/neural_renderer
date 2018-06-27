@@ -76,7 +76,9 @@ __global__ void forward_face_index_map_cuda_kernel(
         if (face[6] < face[3]) pi[0] = 2; else pi[0] = 1;
         if (face[0] < face[6]) pi[2] = 2; else pi[2] = 0;
     }
-    for (int k = 0; k < 3; k++) if (pi[0] != k && pi[2] != k) pi[1] = k;
+    for (int k = 0; k < 3; k++)
+        if (pi[0] != k && pi[2] != k)
+            pi[1] = k;
     
     /* p[num][xyz]: x, y is normalized from [-1, 1] to [0, is - 1]. */
     scalar_t p[3][3];
@@ -105,6 +107,8 @@ __global__ void forward_face_index_map_cuda_kernel(
         face_inv[k] /= face_inv_denominator;
     
     /* from left to right */
+    // const int xi_min = min(max(ceil(p[0][0]), 0.), is - 1.);
+    // const int xi_max = max(min(p[2][0], is - 1.), 0.);
     const int xi_min = max(ceil(p[0][0]), 0.);
     const int xi_max = min(p[2][0], is - 1.);
     for (int xi = xi_min; xi <= xi_max; xi++) {
@@ -134,6 +138,9 @@ __global__ void forward_face_index_map_cuda_kernel(
         for (int yi = yi_min; yi <= yi_max; yi++) {
             /* index in output buffers */
             int index = bn * is * is + yi * is + xi;
+            // remove it after debugging
+            if (index > batch_size * is * is -1)
+                continue;
     
             /* compute w = face_inv * p */
             scalar_t w[3];
@@ -151,6 +158,7 @@ __global__ void forward_face_index_map_cuda_kernel(
     
             /* compute 1 / zp = sum(w / z) */
             const scalar_t zp = 1. / (w[0] / p[0][2] + w[1] / p[1][2] + w[2] / p[2][2]);
+            // index = 2;
             if (zp <= near || far <= zp)
                 continue;
     
@@ -160,23 +168,18 @@ __global__ void forward_face_index_map_cuda_kernel(
                 if (locked = atomicCAS(&lock[index], 0, 1) == 0) {
                     if (zp < atomicAdd(&depth_map[index], 0)) {
                          size_t record = 0;
-                         atomicExch(&depth_map[index], zp);
-                         atomicExch(&face_index_map[index], fn);
+                         depth_map[index] = zp;
+                         face_index_map[index] = fn;
                          for (int k = 0; k < 3; k++)
                              atomicExch(&weight_map[3 * index + pi[k]], w[k]);
                          if (return_depth) {
                              for (int k = 0; k < 3; k++)
                                  for (int l = 0; l < 3; l++)
-                                 atomicExch(
-                                     &face_inv_map[9 * index + 3 * pi[l] + k], face_inv[3 * l + k]);
+                                    atomicExch(
+                                        &face_inv_map[9 * index + 3 * pi[l] + k], face_inv[3 * l + k]);
                          }
-                         record += atomicAdd(&depth_map[index], 0.);
-                         record += atomicAdd(&face_index_map[index], 0.);
-                         if (0. < record) atomicExch(&lock[index], 0);
                     }
-                    else {
-                        atomicExch(&lock[index], 0);
-                    }
+                    atomicExch(&lock[index], 0);
                 }
             } while (!locked);
         }
