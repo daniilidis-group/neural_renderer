@@ -9,7 +9,7 @@ import neural_renderer as nr
 class Renderer():
     def __init__(self, image_size=256, anti_aliasing=True, background_color=[0,0,0],
                  fill_back=True, camera_mode='projection',
-                 P=None, dist_coeffs=None,
+                 P=None, dist_coeffs=None, orig_size=1024,
                  perspective=True, viewing_angle=30, camera_direction=[0,0,1],
                  near=0.1, far=100,
                  light_intensity_ambient=0.5, light_intensity_directional=0.5,
@@ -27,14 +27,15 @@ class Renderer():
             self.P = P
             if isinstance(self.P, numpy.ndarray):
                 self.P = torch.from_numpy(self.P).cuda()
-            if self.P is None or self.ndimension() != 3 or self.P.shape[1] != 3 or self.P.shape[2] != 4:
+            if self.P is None or P.ndimension() != 3 or self.P.shape[1] != 3 or self.P.shape[2] != 4:
                 raise ValueError('You need to provide a valid (batch_size)x3x4 projection matrix')
             self.dist_coeffs = dist_coeffs
             if dist_coeffs is None:
                 self.dist_coeffs = [0., 0., 0., 0., 0.]
+            self.orig_size = orig_size
         elif self.camera_mode in ['look', 'look_at']:
-            self.perspective = True
-            self.viewing_angle = 30
+            self.perspective = perspective
+            self.viewing_angle = viewing_angle
             self.eye = [0, 0, -(1. / math.tan(math.radians(self.viewing_angle)) + 1)]
             self.camera_direction = [0, 0, 1]
         else:
@@ -71,8 +72,7 @@ class Renderer():
             if self.perspective:
                 vertices = nr.perspective(vertices, angle=self.viewing_angle)
         elif self.camera_mode == 'projection':
-            print('Mode is projection')
-            vertices = nr.projection(vertices, self.P)
+            vertices = nr.projection(vertices, self.P, self.dist_coeffs, self.orig_size)
 
         # rasterization
         faces = nr.vertices_to_faces(vertices, faces)
@@ -96,8 +96,7 @@ class Renderer():
             if self.perspective:
                 vertices = nr.perspective(vertices, angle=self.viewing_angle)
         elif self.camera_mode == 'projection':
-            print('Mode is projection')
-            vertices = nr.projection(vertices, self.P)
+            vertices = nr.projection(vertices, self.P, self.dist_coeffs, self.orig_size)
 
         # rasterization
         faces = nr.vertices_to_faces(vertices, faces)
@@ -133,8 +132,7 @@ class Renderer():
             if self.perspective:
                 vertices = nr.perspective(vertices, angle=self.viewing_angle)
         elif self.camera_mode == 'projection':
-            print('Mode is projection')
-            vertices = nr.projection(vertices, self.P)
+            vertices = nr.projection(vertices, self.P, self.dist_coeffs, self.orig_size)
 
         # rasterization
         faces = nr.vertices_to_faces(vertices, faces)
