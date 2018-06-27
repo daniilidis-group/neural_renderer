@@ -10,7 +10,11 @@ def projection(vertices, P, dist_coeffs, orig_size):
     x_ = x / (z + 1e-5)
     y_ = y / (z + 1e-5)
     # vertices[:, :, :-1] = (vertices[:, :, :-1] / (vertices[:, :, None, -1] + 1e-5))
-    k1, k2, p1, p2, k3 = dist_coeffs
+    k1 = dist_coeffs[:, None, 0]
+    k2 = dist_coeffs[:, None, 1]
+    p1 = dist_coeffs[:, None, 2]
+    p2 = dist_coeffs[:, None, 3]
+    k3 = dist_coeffs[:, None, 4]
     # we use x_ for x' and x__ for x'' etc.
     # x_, y_ = vertices[:, :, 0], vertices[:, :, 1]
     r = torch.sqrt(x_ ** 2 + y_ ** 2)
