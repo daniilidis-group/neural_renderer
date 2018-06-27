@@ -31,7 +31,7 @@ class Renderer():
                 raise ValueError('You need to provide a valid (batch_size)x3x4 projection matrix')
             self.dist_coeffs = dist_coeffs
             if dist_coeffs is None:
-                self.dist_coeffs = [0., 0., 0., 0., 0.]
+                self.dist_coeffs = torch.cuda.FloatTensor([[0., 0., 0., 0., 0.]]).repeat(P.shape[0], 1)
             self.orig_size = orig_size
         elif self.camera_mode in ['look', 'look_at']:
             self.perspective = perspective
