@@ -166,8 +166,7 @@ __global__ void forward_face_index_map_cuda_kernel(
             bool locked = false;
             do {
                 if (locked = atomicCAS(&lock[index], 0, 1) == 0) {
-                    if (zp < atomicAdd(&depth_map[index], 0)) {
-                         size_t record = 0;
+                    if (zp < depth_map[index]) {
                          depth_map[index] = zp;
                          face_index_map[index] = fn;
                          for (int k = 0; k < 3; k++)
