@@ -20,7 +20,7 @@ class Mesh:
             self.texture_size = textures.shape[0]
 
     @classmethod
-    def fromobj(cls, filename_obj, load_textures=False, normalization=True, texture_size=4, load_texture=False):
+    def fromobj(cls, filename_obj, normalization=True, load_texture=False, texture_size=4):
         if load_textures:
             vertices, faces, textures = nr.load_obj(filename_obj,
                                                     normalization=normalization,
