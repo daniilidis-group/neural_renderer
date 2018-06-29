@@ -6,7 +6,7 @@ import neural_renderer as nr
 class Mesh:
 
     def __init__(self, vertices, faces, textures, texture_size=4):
-        self.vertices = nn.Parameter(vertices)
+        self.vertices = vertices
         self.faces = faces
         self.num_vertices = self.vertices.shape[0]
         self.num_faces = self.faces.shape[0]
@@ -21,7 +21,7 @@ class Mesh:
 
     @classmethod
     def fromobj(cls, filename_obj, normalization=True, load_texture=False, texture_size=4):
-        if load_textures:
+        if load_texture:
             vertices, faces, textures = nr.load_obj(filename_obj,
                                                     normalization=normalization,
                                                     texture_size=texture_size,
