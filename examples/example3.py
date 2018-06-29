@@ -34,7 +34,7 @@ class Model(nn.Module):
         self.register_buffer('image_ref', image_ref)
 
         # setup renderer
-        renderer = nr.Renderer()
+        renderer = nr.Renderer(camera_mode='look_at')
         renderer.perspective = False
         renderer.light_intensity_directional = 0.0
         renderer.light_intensity_ambient = 1.0

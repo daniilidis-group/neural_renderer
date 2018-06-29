@@ -38,7 +38,7 @@ class Model(nn.Module):
         self.camera_position = nn.Parameter(torch.from_numpy(np.array([6, 10, -14], dtype=np.float32)))
 
         # setup renderer
-        renderer = nr.Renderer()
+        renderer = nr.Renderer(camera_mode='look_at')
         renderer.eye = self.camera_position
         self.renderer = renderer
 

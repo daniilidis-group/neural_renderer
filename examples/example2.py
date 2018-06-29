@@ -36,7 +36,7 @@ class Model(nn.Module):
         self.register_buffer('image_ref', image_ref)
 
         # setup renderer
-        renderer = nr.Renderer()
+        renderer = nr.Renderer(camera_mode='look_at')
         self.renderer = renderer
 
     def forward(self):
