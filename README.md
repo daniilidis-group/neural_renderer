@@ -1,19 +1,11 @@
 # Neural 3D Mesh Renderer (CVPR 2018)
 
 This repo contains a PyTorch implementation of the paper [Neural 3D Mesh Renderer](http://hiroharu-kato.com/projects_en/neural_renderer.html) by Hiroharu Kato, Yoshitaka Ushiku, and Tatsuya Harada.
-It is heavily based on the [original Chainer implementation](https://github.com/hiroharu-kato/neural_renderer) released by the authors.
+It is a port of the [original Chainer implementation](https://github.com/hiroharu-kato/neural_renderer) released by the authors.
+Currently the API is the same as in the original implementation with some smalls additions (e.g. render using a general 3x4 camera matrix, lens distortion coefficients etc.). However it is possible that it will change in the future.
 
-![](http://hiroharu-kato.com/assets/img/neural_renderer/thumbnail_en.png)
-
-For more details, please visit [project page](http://hiroharu-kato.com/projects_en/neural_renderer.html).
-
-This repository only contains the core component and simple examples. Related repositories are:
-
-* PyTorch Neural Renderer (this repository)
-    * [Chainer Neural Renderer](https://github.com/hiroharu-kato/neural_renderer)
-    * [Single-image 3D mesh reconstruction](https://github.com/hiroharu-kato/mesh_reconstruction)
-    * [2D-to-3D style transfer](https://github.com/hiroharu-kato/style_transfer_3d)
-    * [3D DeepDream](https://github.com/hiroharu-kato/deep_dream_3d)
+The library is fully functional and it passes all the test cases supplied by the authors of the original library.
+Detailed documentation will be added in the near future.
 
 ## Installation
 ```
