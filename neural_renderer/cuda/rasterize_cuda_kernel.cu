@@ -70,11 +70,19 @@ __global__ void forward_face_index_map_cuda_kernel(
     /* pi[0], pi[1], pi[2] = leftmost, middle, rightmost points */
     int pi[3];
     if (face[0] < face[3]) {
-        if (face[6] < face[0]) pi[0] = 2; else pi[0] = 0;
-        if (face[3] < face[6]) pi[2] = 2; else pi[2] = 1;
+        if (face[6] < face[0])
+            pi[0] = 2;
+        else pi[0] = 0;
+        if (face[3] < face[6])
+            pi[2] = 2;
+        else pi[2] = 1;
     } else {
-        if (face[6] < face[3]) pi[0] = 2; else pi[0] = 1;
-        if (face[0] < face[6]) pi[2] = 2; else pi[2] = 0;
+        if (face[6] < face[3])
+            pi[0] = 2;
+        else pi[0] = 1;
+        if (face[0] < face[6])
+            pi[2] = 2;
+        else pi[2] = 0;
     }
     for (int k = 0; k < 3; k++)
         if (pi[0] != k && pi[2] != k)
@@ -284,7 +292,8 @@ __global__ void backward_pixel_map_cuda_kernel(
     scalar_t grad_face[9] = {};
 
     /* check backside */
-    if ((face[7] - face[1]) * (face[3] - face[0]) < (face[4] - face[1]) * (face[6] - face[0])) return;
+    if ((face[7] - face[1]) * (face[3] - face[0]) < (face[4] - face[1]) * (face[6] - face[0]))
+        return;
 
     /* for each edge */
     for (int edge_num = 0; edge_num < 3; edge_num++) {
