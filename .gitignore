@@ -106,3 +106,6 @@ venv.bak/
 
 # vim swap files
 *.swp
+
+# result gifs
+*result.gif
