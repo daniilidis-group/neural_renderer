@@ -109,3 +109,7 @@ venv.bak/
 
 # result gifs
 *result.gif
+tests/data/car.png
+tests/data/display.png
+tests/data/test_rasterize1.png
+tests/data/test_rasterize2.png
