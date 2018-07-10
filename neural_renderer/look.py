@@ -3,31 +3,29 @@ import torch
 import torch.nn.functional as F
 
 
-def look(vertices, eye, direction=None, up=None):
+def look(vertices, eye, direction=[0, 1, 0], up=None):
     """
-    "Look at" transformation of vertices.
+    "Look" transformation of vertices.
     """
-    assert (vertices.ndimension() == 3)
+    if (vertices.ndimension() != 3):
+        raise ValueError('vertices Tensor should have 3 dimensions')
+
     device = vertices.device
 
-    if direction is None:
-        direction = torch.from_numpy(np.array([0, 1, 0], np.float32)).to(device)
-    if direction is None:
-        direction = torch.from_numpy(np.array([0, 1, 0], np.float32)).to(device)
-    elif isinstance(direction, list) or isinstance(direction, tuple):
-        direction = torch.from_numpy(np.array(direction, np.float32)).to(device)
+    if isinstance(direction, list) or isinstance(direction, tuple):
+        direction = torch.tensor(direction, dtype=torch.float32, device=device)
     elif isinstance(direction, np.ndarray):
         direction = torch.from_numpy(direction).to(device)
-    else:
+    elif torch.is_tensor(direction):
         direction.to(device)
 
     if isinstance(eye, list) or isinstance(eye, tuple):
-        eye = torch.from_numpy(np.array(eye, np.float32)).to(device)
-    # if numpy array convert to tensor
+        eye = torch.tensor(eye, dtype=torch.float32, device=device)
     elif isinstance(eye, np.ndarray):
         eye = torch.from_numpy(eye).to(device)
-    else:
+    elif torch.is_tensor(eye):
         eye = eye.to(device)
+
     if eye.ndimension() == 1:
         eye = eye[None, :]
     if direction.ndimension() == 1:

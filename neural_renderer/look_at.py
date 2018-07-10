@@ -32,7 +32,7 @@ def look_at(vertices, eye, at=[0, 0, 0], up=[0, 1, 0]):
         eye = torch.tensor(eye, dtype=torch.float32, device=device)
     elif isinstance(eye, np.ndarray):
         eye = torch.from_numpy(eye).to(device)
-    else:
+    elif torch.is_tensor(eye):
         eye = eye.to(device)
 
     batch_size = vertices.shape[0]
