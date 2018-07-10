@@ -46,7 +46,7 @@ def main():
     for num, azimuth in enumerate(loop):
         loop.set_description('Drawing')
         renderer.eye = nr.get_points_from_angles(camera_distance, elevation, azimuth)
-        images = renderer.render(vertices, faces, textures)  # [batch_size, RGB, image_size, image_size]
+        images = renderer(vertices, faces, textures)  # [batch_size, RGB, image_size, image_size]
         image = images.detach().cpu().numpy()[0].transpose((1, 2, 0))  # [image_size, image_size, RGB]
         writer.append_data((255*image).astype(np.uint8))
     writer.close()

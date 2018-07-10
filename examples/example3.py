@@ -43,7 +43,7 @@ class Model(nn.Module):
 
     def forward(self):
         self.renderer.eye = nr.get_points_from_angles(2.732, 0, np.random.uniform(0, 360))
-        image = self.renderer.render(self.vertices, self.faces, torch.tanh(self.textures))
+        image = self.renderer(self.vertices, self.faces, torch.tanh(self.textures))
         loss = torch.sum((image - self.image_ref) ** 2)
         return loss
 
@@ -81,7 +81,7 @@ def main():
     for num, azimuth in enumerate(loop):
         loop.set_description('Drawing')
         model.renderer.eye = nr.get_points_from_angles(2.732, 0, azimuth)
-        images = model.renderer.render(model.vertices, model.faces, torch.tanh(model.textures))
+        images = model.renderer(model.vertices, model.faces, torch.tanh(model.textures))
         image = images.detach().cpu().numpy()[0].transpose((1, 2, 0))
         imsave('/tmp/_tmp_%04d.png' % num, image)
     make_gif(args.filename_output)

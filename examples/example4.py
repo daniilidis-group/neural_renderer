@@ -43,7 +43,7 @@ class Model(nn.Module):
         self.renderer = renderer
 
     def forward(self):
-        image = self.renderer.render_silhouettes(self.vertices, self.faces)
+        image = self.renderer(self.vertices, self.faces, mode='silhouettes')
         loss = torch.sum((image - self.image_ref[None, :, :]) ** 2)
         return loss
 
@@ -89,7 +89,7 @@ def main():
         loss = model()
         loss.backward()
         optimizer.step()
-        images = model.renderer.render(model.vertices, model.faces, torch.tanh(model.textures))
+        images = model.renderer(model.vertices, model.faces, torch.tanh(model.textures))
         image = images.detach().cpu().numpy()[0].transpose(1,2,0)
         imsave('/tmp/_tmp_%04d.png' % i, image)
         loop.set_description('Optimizing (loss %.4f)' % loss.data)
