@@ -1,12 +1,13 @@
 import math
 
 import torch
+import torch.nn as nn
 import numpy
 
 import neural_renderer as nr
 
 
-class Renderer():
+class Renderer(nn.Module):
     def __init__(self, image_size=256, anti_aliasing=True, background_color=[0,0,0],
                  fill_back=True, camera_mode='projection',
                  P=None, dist_coeffs=None, orig_size=1024,
@@ -15,6 +16,7 @@ class Renderer():
                  light_intensity_ambient=0.5, light_intensity_directional=0.5,
                  light_color_ambient=[1,1,1], light_color_directional=[1,1,1],
                  light_direction=[0,1,0]):
+        super(Renderer, self).__init__()
         # rendering
         self.image_size = image_size
         self.anti_aliasing = anti_aliasing
@@ -54,6 +56,21 @@ class Renderer():
 
         # rasterization
         self.rasterizer_eps = 1e-3
+
+    def forward(self, vertices, faces, textures=None, mode=None):
+        '''
+        Implementation of forward rendering method
+        The old API is preserved for back-compatibility with the Chainer implementation
+        '''
+        
+        if mode is None:
+            return self.render(vertices, faces, textures)
+        elif mode == 'silhouettes':
+            return self.render_silhouettes(vertices, faces)
+        elif mode == 'depth':
+            return self.render_depth(vertices, faces)
+        else:
+            raise ValueError("mode should be one of None, 'silhouettes' or 'depth'")
 
     def render_silhouettes(self, vertices, faces):
         # fill back

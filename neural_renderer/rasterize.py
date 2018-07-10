@@ -13,10 +13,17 @@ DEFAULT_EPS = 1e-4
 DEFAULT_BACKGROUND_COLOR = (0, 0, 0)
 
 class RasterizeFunction(Function):
-
+    '''
+    Definition of differentiable rasterize operation
+    Some parts of the code are implemented in CUDA
+    Currently implemented only for cuda Tensors
+    '''
     @staticmethod
     def forward(ctx, faces, textures, image_size, near, far, eps, background_color,
                 return_rgb=False, return_alpha=False, return_depth=False):
+        '''
+        Forward pass
+        '''
         ctx.image_size = image_size
         ctx.near = near
         ctx.far = far
@@ -92,6 +99,9 @@ class RasterizeFunction(Function):
 
     @staticmethod
     def backward(ctx, grad_rgb_map, grad_alpha_map, grad_depth_map):
+        '''
+        Backward pass
+        '''
         faces, textures, face_index_map, weight_map,\
         depth_map, rgb_map, alpha_map, face_inv_map,\
         sampling_index_map, sampling_weight_map = \
@@ -217,12 +227,14 @@ class RasterizeFunction(Function):
                                      grad_depth_map, grad_faces, ctx.image_size)
 
 class Rasterize(nn.Module):
-    
+    '''
+    Wrapper around the autograd function RasterizeFunction
+    Currently implemented only for cuda Tensors
+    '''
     def __init__(self, image_size, near, far, eps, background_color,
                  return_rgb=False, return_alpha=False, return_depth=False):
         super(Rasterize, self).__init__()
         self.image_size = image_size
-        # arguments
         self.image_size = image_size
         self.near = near
         self.far = far
@@ -233,6 +245,8 @@ class Rasterize(nn.Module):
         self.return_depth = return_depth
 
     def forward(self, faces, textures):
+        if faces.device == "cpu" or (textures is not None and textures.device == "cpu"):
+            raise TypeError('Rasterize module supports only cuda Tensors')
         return RasterizeFunction.apply(faces, textures, self.image_size, self.near, self.far,
                                        self.eps, self.background_color,
                                        self.return_rgb, self.return_alpha, self.return_depth)
