@@ -23,7 +23,7 @@ class TestRasterizeDepth(unittest.TestCase):
         renderer.image_size = 256
         renderer.anti_aliasing = False
 
-        images = renderer.render_depth(vertices, faces)
+        images = renderer(vertices, faces, mode='depth')
         images = images.detach().cpu().numpy()
         image = images[2]
         image = image != image.max()
@@ -43,7 +43,7 @@ class TestRasterizeDepth(unittest.TestCase):
         renderer.image_size = 256
         renderer.anti_aliasing = False
 
-        images = renderer.render_depth(vertices, faces)
+        images = renderer(vertices, faces, mode='depth')
         images = images.detach().cpu().numpy()
         image = images[2]
         image[image == image.max()] = image.min()
@@ -71,7 +71,7 @@ class TestRasterizeDepth(unittest.TestCase):
         vertices, faces = utils.to_minibatch((vertices, faces))
         vertices.requires_grad = True
 
-        images = renderer.render_depth(vertices, faces)
+        images = renderer(vertices, faces, mode='depth')
         loss = torch.sum((images[0, 15, 20] - 1)**2)
         loss.backward()
         grad = vertices.grad.clone()
