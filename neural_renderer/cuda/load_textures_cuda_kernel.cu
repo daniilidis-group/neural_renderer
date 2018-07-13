@@ -75,7 +75,7 @@ at::Tensor load_textures_cuda(
     const auto image_width = image.size(1);
     
     const int threads = 1024;
-    const int blocks = (textures_size / 3 - 1) / threads + 1;
+    const dim3 blocks ((textures_size / 3 - 1) / threads + 1);
 
     AT_DISPATCH_FLOATING_TYPES(image.type(), "load_textures_cuda", ([&] {
       load_textures_cuda_kernel<scalar_t><<<blocks, threads>>>(

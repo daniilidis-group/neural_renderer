@@ -126,9 +126,9 @@ at::Tensor create_texture_image_cuda(
     const auto tile_width = int(sqrt(num_faces - 1)) + 1;
     const auto texture_size_out = image.size(1) / tile_width;
 
-    const int threads = 1024;
+    const int threads = 128;
     const int image_size = image.numel();
-    const int blocks = (image_size / 3 - 1) / threads + 1;
+    const dim3 blocks ((image_size / 3 - 1) / threads + 1, 1, 1);
 
     AT_DISPATCH_FLOATING_TYPES(image.type(), "create_texture_image_cuda", ([&] {
       create_texture_image_cuda_kernel<scalar_t><<<blocks, threads>>>(

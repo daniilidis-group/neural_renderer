@@ -173,8 +173,8 @@ __global__ void forward_face_index_map_cuda_kernel(
             /* lock and update */
             bool locked = false;
             do {
-                if (locked = atomicCAS(&lock[index], 0, 1) == 0) {
-                    if (zp < depth_map[index]) {
+                if ( locked = atomicCAS(&lock[index], 0, 1) == 0) {
+                    if (zp <= depth_map[index]) {
                          depth_map[index] = zp;
                          face_index_map[index] = fn;
                          for (int k = 0; k < 3; k++)
@@ -566,13 +566,13 @@ __global__ void backward_textures_cuda_kernel(
 
 template <typename scalar_t>
 __global__ void backward_depth_map_cuda_kernel(
-        const scalar_t* __restrict__ faces,
-        const scalar_t* __restrict__ depth_map,
-        const int32_t* __restrict__ face_index_map,
-        const scalar_t* __restrict__ face_inv_map,
-        const scalar_t* __restrict__ weight_map,
-        scalar_t* __restrict__ grad_depth_map,
-        scalar_t* __restrict__ grad_faces,
+        const scalar_t*  faces,
+        const scalar_t*  depth_map,
+        const int32_t* face_index_map,
+        const scalar_t* face_inv_map,
+        const scalar_t* weight_map,
+        scalar_t*  grad_depth_map,
+        scalar_t*  grad_faces,
         size_t batch_size,
         size_t num_faces,
         int image_size) {
@@ -633,8 +633,8 @@ std::vector<at::Tensor> forward_face_index_map_cuda(
 
     const auto batch_size = faces.size(0);
     const auto num_faces = faces.size(1);
-    const int threads = 1024;
-    const int blocks = (batch_size * num_faces - 1) / threads +1;
+    const int threads = 512;
+    const dim3 blocks ((batch_size * num_faces - 1) / threads +1);
 
     AT_DISPATCH_FLOATING_TYPES(faces.type(), "forward_face_index_map_cuda", ([&] {
       forward_face_index_map_cuda_kernel<scalar_t><<<blocks, threads>>>(
@@ -675,8 +675,8 @@ std::vector<at::Tensor> forward_texture_sampling_cuda(
     const auto batch_size = faces.size(0);
     const auto num_faces = faces.size(1);
     const auto texture_size = textures.size(2);
-    const int threads = 1024;
-    const int blocks = (batch_size * image_size * image_size - 1) / threads + 1;
+    const int threads = 512;
+    const dim3 blocks ((batch_size * image_size * image_size - 1) / threads + 1);
 
     AT_DISPATCH_FLOATING_TYPES(faces.type(), "forward_texture_sampling_cuda", ([&] {
       forward_texture_sampling_cuda_kernel<scalar_t><<<blocks, threads>>>(
@@ -717,8 +717,8 @@ at::Tensor backward_pixel_map_cuda(
     
     const auto batch_size = faces.size(0);
     const auto num_faces = faces.size(1);
-    const int threads = 1024;
-    const int blocks = (batch_size * num_faces - 1) / threads + 1;
+    const int threads = 512;
+    const dim3 blocks ((batch_size * num_faces - 1) / threads + 1);
 
     AT_DISPATCH_FLOATING_TYPES(faces.type(), "backward_pixel_map_cuda", ([&] {
       backward_pixel_map_cuda_kernel<scalar_t><<<blocks, threads>>>(
@@ -755,8 +755,8 @@ at::Tensor backward_textures_cuda(
     const auto batch_size = face_index_map.size(0);
     const auto image_size = face_index_map.size(1);
     const auto texture_size = grad_textures.size(2);
-    const int threads = 1024;
-    const int blocks = (batch_size * image_size * image_size - 1) / threads + 1;
+    const int threads = 512;
+    const dim3 blocks ((batch_size * image_size * image_size - 1) / threads + 1);
 
     AT_DISPATCH_FLOATING_TYPES(sampling_weight_map.type(), "backward_textures_cuda", ([&] {
       backward_textures_cuda_kernel<scalar_t><<<blocks, threads>>>(
@@ -789,8 +789,8 @@ at::Tensor backward_depth_map_cuda(
 
     const auto batch_size = faces.size(0);
     const auto num_faces = faces.size(1);
-    const int threads = 1024;
-    const int blocks = (batch_size * image_size * image_size - 1) / threads + 1;
+    const int threads = 512;
+    const dim3 blocks ((batch_size * image_size * image_size - 1) / threads + 1);
 
     AT_DISPATCH_FLOATING_TYPES(faces.type(), "backward_depth_map_cuda", ([&] {
       backward_depth_map_cuda_kernel<scalar_t><<<blocks, threads>>>(
