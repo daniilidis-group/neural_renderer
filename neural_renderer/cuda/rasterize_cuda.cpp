@@ -10,7 +10,7 @@ std::vector<at::Tensor> forward_face_index_map_cuda(
         at::Tensor weight_map,
         at::Tensor depth_map,
         at::Tensor face_inv_map,
-        at::Tensor lock,
+        at::Tensor faces_inv,
         int image_size,
         float near,
         float far,
@@ -73,7 +73,7 @@ std::vector<at::Tensor> forward_face_index_map(
         at::Tensor weight_map,
         at::Tensor depth_map,
         at::Tensor face_inv_map,
-        at::Tensor lock,
+        at::Tensor faces_inv,
         int image_size,
         float near,
         float far,
@@ -86,10 +86,10 @@ std::vector<at::Tensor> forward_face_index_map(
     CHECK_INPUT(weight_map);
     CHECK_INPUT(depth_map);
     CHECK_INPUT(face_inv_map);
-    CHECK_INPUT(lock);
+    CHECK_INPUT(faces_inv);
 
     return forward_face_index_map_cuda(faces, face_index_map, weight_map,
-                                       depth_map, face_inv_map, lock,
+                                       depth_map, face_inv_map, faces_inv,
                                        image_size, near, far,
                                        return_rgb, return_alpha, return_depth);
 }
