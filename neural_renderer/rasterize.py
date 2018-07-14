@@ -159,9 +159,9 @@ class RasterizeFunction(Function):
     @staticmethod
     def forward_face_index_map(ctx, faces, face_index_map, weight_map, 
                                depth_map, face_inv_map):
-        lock = torch.zeros_like(face_index_map, dtype=torch.int32)
+        faces_inv = torch.zeros_like(faces)
         return rasterize_cuda.forward_face_index_map(faces, face_index_map, weight_map,
-                                        depth_map, face_inv_map, lock,
+                                        depth_map, face_inv_map, faces_inv,
                                         ctx.image_size, ctx.near, ctx.far,
                                         ctx.return_rgb, ctx.return_alpha,
                                         ctx.return_depth)
