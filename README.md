@@ -6,8 +6,17 @@ Currently the API is the same as in the original implementation with some smalls
 
 The library is fully functional and it passes all the test cases supplied by the authors of the original library.
 Detailed documentation will be added in the near future.
+## Requirements
+Python 2.7+ and PyTorch 0.4.0.
 
+The code has been tested only with PyTorch 0.4.0, there are no guarantees that it is compatible with older versions.
+Currently the library has both Python 3 and Python 2 support.
 ## Installation
+For Python 2
+```
+sudo python3 setup.py install
+```
+For Python 3
 ```
 sudo python3 setup.py install
 ```
