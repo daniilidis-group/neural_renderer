@@ -3,7 +3,7 @@ import torch.nn as nn
 
 import neural_renderer as nr
 
-class Mesh:
+class Mesh(object):
     '''
     A simple class for creating and manipulating trimesh objects
     '''

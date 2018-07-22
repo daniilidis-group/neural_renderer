@@ -1,7 +1,6 @@
 from setuptools import setup, find_packages
 import unittest
 
-import torch
 from torch.utils.cpp_extension import BuildExtension, CUDAExtension
 
 CUDA_FLAGS = []
@@ -15,18 +14,15 @@ ext_modules=[
     CUDAExtension('neural_renderer.cuda.load_textures', [
         'neural_renderer/cuda/load_textures_cuda.cpp',
         'neural_renderer/cuda/load_textures_cuda_kernel.cu',
-        ],
-        extra_compile_args={'cxx': [], 'nvcc': CUDA_FLAGS}),
+        ]),
     CUDAExtension('neural_renderer.cuda.rasterize', [
         'neural_renderer/cuda/rasterize_cuda.cpp',
         'neural_renderer/cuda/rasterize_cuda_kernel.cu',
-        ],
-        extra_compile_args={'cxx': [], 'nvcc': CUDA_FLAGS}),
+        ]),
     CUDAExtension('neural_renderer.cuda.create_texture_image', [
         'neural_renderer/cuda/create_texture_image_cuda.cpp',
         'neural_renderer/cuda/create_texture_image_cuda_kernel.cu',
-        ],
-        extra_compile_args={'cxx': [], 'nvcc': CUDA_FLAGS}),
+        ]),
     ]
 
 INSTALL_REQUIREMENTS = ['numpy', 'torch', 'torchvision', 'scikit-image', 'tqdm', 'imageio']
@@ -39,7 +35,7 @@ setup(
     version='1.1.3',
     name='neural_renderer',
     test_suite='setup.test_all',
-    packages=find_packages(),
+    packages=['neural_renderer', 'neural_renderer.cuda'],
     install_requires=INSTALL_REQUIREMENTS,
     ext_modules=ext_modules,
     cmdclass = {'build_ext': BuildExtension}
