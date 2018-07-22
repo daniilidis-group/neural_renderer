@@ -23,7 +23,7 @@ namespace{
 template <typename scalar_t>
 __global__ void forward_face_index_map_cuda_kernel_1(
         const scalar_t* __restrict__ faces,
-        scalar_t* faces_inv,
+        scalar_t* __restrict__ faces_inv,
         int batch_size,
         int num_faces,
         int image_size) {
@@ -41,7 +41,7 @@ __global__ void forward_face_index_map_cuda_kernel_1(
         return;
 
     /* p[num][xy]: x, y is normalized from [-1, 1] to [0, is - 1]. */
-    float p[3][2];
+    scalar_t p[3][2];
     for (int num = 0; num < 3; num++) {
         for (int dim = 0; dim < 2; dim++) {
             p[num][dim] = 0.5 * (face[3 * num + dim] * is + is - 1);
@@ -49,11 +49,11 @@ __global__ void forward_face_index_map_cuda_kernel_1(
     }
 
     /* compute face_inv */
-    float face_inv[9] = {
+    scalar_t face_inv[9] = {
         p[1][1] - p[2][1], p[2][0] - p[1][0], p[1][0] * p[2][1] - p[2][0] * p[1][1],
         p[2][1] - p[0][1], p[0][0] - p[2][0], p[2][0] * p[0][1] - p[0][0] * p[2][1],
         p[0][1] - p[1][1], p[1][0] - p[0][0], p[0][0] * p[1][1] - p[1][0] * p[0][1]};
-    float face_inv_denominator = (
+    scalar_t face_inv_denominator = (
         p[2][0] * (p[0][1] - p[1][1]) +
         p[0][0] * (p[1][1] - p[2][1]) +
         p[1][0] * (p[2][1] - p[0][1]));
@@ -70,10 +70,10 @@ template <typename scalar_t>
 __global__ void forward_face_index_map_cuda_kernel_2(
         const scalar_t* faces,
         scalar_t* faces_inv,
-        int32_t* face_index_map,
-        scalar_t* weight_map,
-        scalar_t* depth_map,
-        scalar_t* face_inv_map,
+        int32_t* __restrict__ face_index_map,
+        scalar_t* __restrict__ weight_map,
+        scalar_t* __restrict__ depth_map,
+        scalar_t* __restrict__ face_inv_map,
         int batch_size,
         int num_faces,
         int image_size,
