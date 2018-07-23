@@ -14,7 +14,7 @@ Currently the library has both Python 3 and Python 2 support.
 ## Installation
 For Python 2
 ```
-sudo python3 setup.py install
+sudo python setup.py install
 ```
 For Python 3
 ```
