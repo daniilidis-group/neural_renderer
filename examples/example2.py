@@ -1,6 +1,7 @@
 """
 Example 2. Optimizing vertices.
 """
+from __future__ import division
 import os
 import argparse
 import glob

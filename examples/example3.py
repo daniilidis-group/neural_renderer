@@ -1,6 +1,7 @@
 """
 Example 3. Optimizing textures.
 """
+from __future__ import division
 import os
 import argparse
 import glob
