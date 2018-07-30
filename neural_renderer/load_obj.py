@@ -85,6 +85,14 @@ def load_textures(filename_obj, filename_mtl, texture_size):
     for material_name, filename_texture in texture_filenames.items():
         filename_texture = os.path.join(os.path.dirname(filename_obj), filename_texture)
         image = imread(filename_texture).astype(np.float32) / 255.
+
+        # texture image may have one channel (grey color)
+        if len(image.shape) == 2:
+            image = np.stack((image,)*3,-1)
+        # or has extral alpha channel shoule ignore for now
+        if image.shape[2] == 4:
+            image = image[:,:,:3]
+
         # pytorch does not support negative slicing for the moment
         image = image[::-1, :, :]
         image = torch.from_numpy(image.copy()).cuda()
