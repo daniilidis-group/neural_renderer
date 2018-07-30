@@ -48,16 +48,16 @@ def load_textures(filename_obj, filename_mtl, texture_size):
         if line.split()[0] == 'f':
             vs = line.split()[1:]
             nv = len(vs)
-            if '/' in vs[0]:
+            if '/' in vs[0] and '//' not in vs[0]:
                 v0 = int(vs[0].split('/')[1])
             else:
                 v0 = 0
             for i in range(nv - 2):
-                if '/' in vs[i + 1]:
+                if '/' in vs[i + 1] and '//' not in vs[i + 1]:
                     v1 = int(vs[i + 1].split('/')[1])
                 else:
                     v1 = 0
-                if '/' in vs[i + 2]:
+                if '/' in vs[i + 2] and '//' not in vs[i + 2]:
                     v2 = int(vs[i + 2].split('/')[1])
                 else:
                     v2 = 0
