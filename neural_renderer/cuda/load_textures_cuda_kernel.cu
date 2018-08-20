@@ -77,12 +77,12 @@ __global__ void load_textures_cuda_kernel(
         const scalar_t weight_y1 = pos_y - (int)pos_y;
         const scalar_t weight_y0 = 1 - weight_y1;
         for (int k = 0; k < 3; k++) {
-            if (texture_wrapping != CLAMP_TO_BORDER || (pos_x > 0 && pos_x < image_width-1) || (pos_y > 0 && pos_y < image_height-1)) {
+            if (texture_wrapping != CLAMP_TO_BORDER) {
                 scalar_t c = 0;
                 c += image[((int)pos_y * image_width + (int)pos_x) * 3 + k] * (weight_x0 * weight_y0);
-                c += image[((int)(pos_y + 1) * image_width + (int)pos_x) * 3 + k] * (weight_x0 * weight_y1);
-                c += image[((int)pos_y * image_width + ((int)pos_x) + 1) * 3 + k] * (weight_x1 * weight_y0);
-                c += image[((int)(pos_y + 1)* image_width + ((int)pos_x) + 1) * 3 + k] * (weight_x1 * weight_y1);
+                c += image[((int)min((pos_y + 1), image_height-1) * image_width + (int)pos_x) * 3 + k] * (weight_x0 * weight_y1);
+                c += image[((int)pos_y * image_width + (min((int)pos_x) + 1, image_width-1)) * 3 + k] * (weight_x1 * weight_y0);
+                c += image[(min((int)(pos_y + 1), image_height-1)* image_width + min(((int)pos_x) + 1), image_width-1) * 3 + k] * (weight_x1 * weight_y1);
                 texture_[k] = c;
             }
             else {
@@ -94,7 +94,7 @@ __global__ void load_textures_cuda_kernel(
         const int pos_xi = round(pos_x);
         const int pos_yi = round(pos_y);
         for (int k = 0; k < 3; k++) {
-            if (texture_wrapping != CLAMP_TO_BORDER || (pos_xi > 0 && pos_xi < image_width) || (pos_yi > 0 && pos_yi < image_height)) {
+            if (texture_wrapping != CLAMP_TO_BORDER) {
                 texture_[k] = image[(pos_yi * image_width + pos_xi) * 3 + k];
             }
             else {
