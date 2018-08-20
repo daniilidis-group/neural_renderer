@@ -80,9 +80,9 @@ __global__ void load_textures_cuda_kernel(
             if (texture_wrapping != CLAMP_TO_BORDER) {
                 scalar_t c = 0;
                 c += image[((int)pos_y * image_width + (int)pos_x) * 3 + k] * (weight_x0 * weight_y0);
-                c += image[((int)min((pos_y + 1), image_height-1) * image_width + (int)pos_x) * 3 + k] * (weight_x0 * weight_y1);
-                c += image[((int)pos_y * image_width + (min((int)pos_x) + 1, image_width-1)) * 3 + k] * (weight_x1 * weight_y0);
-                c += image[(min((int)(pos_y + 1), image_height-1)* image_width + min(((int)pos_x) + 1), image_width-1) * 3 + k] * (weight_x1 * weight_y1);
+                c += image[(min((int)(pos_y + 1), image_height-1) * image_width + (int)pos_x) * 3 + k] * (weight_x0 * weight_y1);
+                c += image[((int)pos_y * image_width + (min((int)pos_x + 1, image_width-1))) * 3 + k] * (weight_x1 * weight_y0);
+                c += image[(min((int)(pos_y + 1), image_height-1)* image_width + min((int)pos_x + 1, image_width-1)) * 3 + k] * (weight_x1 * weight_y1);
                 texture_[k] = c;
             }
             else {
