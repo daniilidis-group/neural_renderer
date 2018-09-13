@@ -12,8 +12,8 @@ at::Tensor load_textures_cuda(
 
 // C++ interface
 
-#define CHECK_CUDA(x) AT_ASSERT(x.type().is_cuda(), #x " must be a CUDA tensor")
-#define CHECK_CONTIGUOUS(x) AT_ASSERT(x.is_contiguous(), #x " must be contiguous")
+#define CHECK_CUDA(x) AT_CHECK(x.type().is_cuda(), #x " must be a CUDA tensor")
+#define CHECK_CONTIGUOUS(x) AT_CHECK(x.is_contiguous(), #x " must be contiguous")
 #define CHECK_INPUT(x) CHECK_CUDA(x); CHECK_CONTIGUOUS(x)
 
 
@@ -34,7 +34,6 @@ at::Tensor load_textures(
                                       
 }
 
-//PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
-PYBIND11_MODULE(load_textures, m) {
+PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
     m.def("load_textures", &load_textures, "LOAD_TEXTURES (CUDA)");
 }

@@ -63,8 +63,8 @@ at::Tensor backward_depth_map_cuda(
 
 // C++ interface
 
-#define CHECK_CUDA(x) AT_ASSERT(x.type().is_cuda(), #x " must be a CUDA tensor")
-#define CHECK_CONTIGUOUS(x) AT_ASSERT(x.is_contiguous(), #x " must be contiguous")
+#define CHECK_CUDA(x) AT_CHECK(x.type().is_cuda(), #x " must be a CUDA tensor")
+#define CHECK_CONTIGUOUS(x) AT_CHECK(x.is_contiguous(), #x " must be contiguous")
 #define CHECK_INPUT(x) CHECK_CUDA(x); CHECK_CONTIGUOUS(x)
 
 std::vector<at::Tensor> forward_face_index_map(
@@ -190,8 +190,7 @@ at::Tensor backward_depth_map(
                                    image_size);
 }
 
-// PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
-PYBIND11_MODULE(rasterize, m) {
+PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
     m.def("forward_face_index_map", &forward_face_index_map, "FORWARD_FACE_INDEX_MAP (CUDA)");
     m.def("forward_texture_sampling", &forward_texture_sampling, "FORWARD_TEXTURE_SAMPLING (CUDA)");
     m.def("backward_pixel_map", &backward_pixel_map, "BACKWARD_PIXEL_MAP (CUDA)");
