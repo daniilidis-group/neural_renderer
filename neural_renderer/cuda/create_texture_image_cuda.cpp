@@ -28,7 +28,6 @@ at::Tensor create_texture_image(
     return create_texture_image_cuda(vertices_all, textures, image, eps);
 }
 
-// PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
-PYBIND11_MODULE(create_texture_image, m) {
+PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
     m.def("create_texture_image", &create_texture_image, "CREATE_TEXTURE_IMAGE (CUDA)");
 }
