@@ -1,4 +1,4 @@
-# CXX=g++-4.9 CC=gcc-4.9 python setup_jit.py
+# CXX=g++-4.9 CC=gcc-4.9 python setup_jit.py install # or develop
 import unittest
 from setuptools import setup, find_packages
 from torch.utils.cpp_extension import load
