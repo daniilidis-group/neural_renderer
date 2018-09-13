@@ -1,5 +1,6 @@
 # CXX=g++-4.9 CC=gcc-4.9 python setup_jit.py
 import unittest
+from setuptools import setup, find_packages
 from torch.utils.cpp_extension import load
 import os
 
@@ -28,3 +29,20 @@ create_texture_image = load(
 help(load_textures)
 help(rasterize)
 help(create_texture_image)
+
+
+INSTALL_REQUIREMENTS = ['numpy', 'torch', 'torchvision', 'scikit-image', 'tqdm', 'imageio']
+
+setup(
+    description='PyTorch implementation of "A 3D mesh renderer for neural networks"',
+    author='Nikolaos Kolotouros',
+    author_email='nkolot@seas.upenn.edu',
+    license='MIT License',
+    version='1.1.3',
+    name='neural_renderer',
+    test_suite='setup.test_all',
+    packages=['neural_renderer', 'neural_renderer.cuda'],
+    install_requires=INSTALL_REQUIREMENTS,
+    # ext_modules=ext_modules,
+    # cmdclass = {'build_ext': BuildExtension}
+)
