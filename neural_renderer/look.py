@@ -26,6 +26,8 @@ def look(vertices, eye, direction=[0, 1, 0], up=None):
     elif torch.is_tensor(eye):
         eye = eye.to(device)
 
+    if up is None:
+        up = torch.cuda.FloatTensor([0, 1, 0])
     if eye.ndimension() == 1:
         eye = eye[None, :]
     if direction.ndimension() == 1:

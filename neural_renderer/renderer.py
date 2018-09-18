@@ -11,7 +11,7 @@ import neural_renderer as nr
 class Renderer(nn.Module):
     def __init__(self, image_size=256, anti_aliasing=True, background_color=[0,0,0],
                  fill_back=True, camera_mode='projection',
-                 P=None, dist_coeffs=None, orig_size=1024,
+                 K=None, R=None, t=None, dist_coeffs=None, orig_size=1024,
                  perspective=True, viewing_angle=30, camera_direction=[0,0,1],
                  near=0.1, far=100,
                  light_intensity_ambient=0.5, light_intensity_directional=0.5,
@@ -27,14 +27,24 @@ class Renderer(nn.Module):
         # camera
         self.camera_mode = camera_mode
         if self.camera_mode == 'projection':
-            self.P = P
-            if isinstance(self.P, numpy.ndarray):
-                self.P = torch.from_numpy(self.P).cuda()
-            if self.P is None or P.ndimension() != 3 or self.P.shape[1] != 3 or self.P.shape[2] != 4:
-                raise ValueError('You need to provide a valid (batch_size)x3x4 projection matrix')
+            self.K = K
+            self.R = R
+            self.t = t
+            if isinstance(self.K, numpy.ndarray):
+                self.K = torch.cuda.FloatTensor(self.K)
+            if isinstance(self.R, numpy.ndarray):
+                self.R = torch.cuda.FloatTensor(self.R)
+            if isinstance(self.t, numpy.ndarray):
+                self.t = torch.cuda.FloatTensor(self.t)
+            # if self.K is None or self.K.ndimension() != 3 or self.K.shape[1] != 3 or self.K.shape[2] != 3:
+            #     raise ValueError('You need to provide a valid (batch_size)x3x3 intrinsic camera matrix')
+            # if self.R is None or self.R.ndimension() != 3 or self.R.shape[1] != 3 or self.R.shape[2] != 3:
+            #     raise ValueError('You need to provide a valid (batch_size)x3x3 rotation matrix')
+            # if self.t is None or self.t.ndimension() != 2 or self.t.shape[1] != 3:
+            #     raise ValueError('You need to provide a valid (batch_size)x3 translation vector matrix')
             self.dist_coeffs = dist_coeffs
             if dist_coeffs is None:
-                self.dist_coeffs = torch.cuda.FloatTensor([[0., 0., 0., 0., 0.]]).repeat(P.shape[0], 1)
+                self.dist_coeffs = torch.cuda.FloatTensor([[0., 0., 0., 0., 0.]])
             self.orig_size = orig_size
         elif self.camera_mode in ['look', 'look_at']:
             self.perspective = perspective
@@ -58,22 +68,23 @@ class Renderer(nn.Module):
         # rasterization
         self.rasterizer_eps = 1e-3
 
-    def forward(self, vertices, faces, textures=None, mode=None):
+    def forward(self, vertices, faces, textures=None, mode=None, K=None, R=None, t=None, dist_coeffs=None, orig_size=None):
         '''
         Implementation of forward rendering method
         The old API is preserved for back-compatibility with the Chainer implementation
         '''
         
         if mode is None:
-            return self.render(vertices, faces, textures)
+            return self.render(vertices, faces, textures, K, R, t, dist_coeffs, orig_size)
         elif mode == 'silhouettes':
-            return self.render_silhouettes(vertices, faces)
+            return self.render_silhouettes(vertices, faces, K, R, t, dist_coeffs, orig_size)
         elif mode == 'depth':
-            return self.render_depth(vertices, faces)
+            return self.render_depth(vertices, faces, K, R, t, dist_coeffs, orig_size)
         else:
             raise ValueError("mode should be one of None, 'silhouettes' or 'depth'")
 
-    def render_silhouettes(self, vertices, faces):
+    def render_silhouettes(self, vertices, faces, K=None, R=None, t=None, dist_coeffs=None, orig_size=None):
+
         # fill back
         if self.fill_back:
             faces = torch.cat((faces, faces[:, :, list(reversed(range(faces.shape[-1])))]), dim=1)
@@ -90,14 +101,25 @@ class Renderer(nn.Module):
             if self.perspective:
                 vertices = nr.perspective(vertices, angle=self.viewing_angle)
         elif self.camera_mode == 'projection':
-            vertices = nr.projection(vertices, self.P, self.dist_coeffs, self.orig_size)
+            if K is None:
+                K = self.K
+            if R is None:
+                R = self.R
+            if t is None:
+                t = self.t
+            if dist_coeffs is None:
+                dist_coeffs = self.dist_coeffs
+            if orig_size is None:
+                orig_size = self.orig_size
+            vertices = nr.projection(vertices, K, R, t, dist_coeffs, orig_size)
 
         # rasterization
         faces = nr.vertices_to_faces(vertices, faces)
         images = nr.rasterize_silhouettes(faces, self.image_size, self.anti_aliasing)
         return images
 
-    def render_depth(self, vertices, faces):
+    def render_depth(self, vertices, faces, K=None, R=None, t=None, dist_coeffs=None, orig_size=None):
+
         # fill back
         if self.fill_back:
             faces = torch.cat((faces, faces[:, :, list(reversed(range(faces.shape[-1])))]), dim=1).detach()
@@ -114,14 +136,24 @@ class Renderer(nn.Module):
             if self.perspective:
                 vertices = nr.perspective(vertices, angle=self.viewing_angle)
         elif self.camera_mode == 'projection':
-            vertices = nr.projection(vertices, self.P, self.dist_coeffs, self.orig_size)
+            if K is None:
+                K = self.K
+            if R is None:
+                R = self.R
+            if t is None:
+                t = self.t
+            if dist_coeffs is None:
+                dist_coeffs = self.dist_coeffs
+            if orig_size is None:
+                orig_size = self.orig_size
+            vertices = nr.projection(vertices, K, R, t, dist_coeffs, orig_size)
 
         # rasterization
         faces = nr.vertices_to_faces(vertices, faces)
         images = nr.rasterize_depth(faces, self.image_size, self.anti_aliasing)
         return images
 
-    def render(self, vertices, faces, textures):
+    def render(self, vertices, faces, textures, K=None, R=None, t=None, dist_coeffs=None, orig_size=None):
         # fill back
         if self.fill_back:
             faces = torch.cat((faces, faces[:, :, list(reversed(range(faces.shape[-1])))]), dim=1).detach()
@@ -150,7 +182,17 @@ class Renderer(nn.Module):
             if self.perspective:
                 vertices = nr.perspective(vertices, angle=self.viewing_angle)
         elif self.camera_mode == 'projection':
-            vertices = nr.projection(vertices, self.P, self.dist_coeffs, self.orig_size)
+            if K is None:
+                K = self.K
+            if R is None:
+                R = self.R
+            if t is None:
+                t = self.t
+            if dist_coeffs is None:
+                dist_coeffs = self.dist_coeffs
+            if orig_size is None:
+                orig_size = self.orig_size
+            vertices = nr.projection(vertices, K, R, t, dist_coeffs, orig_size)
 
         # rasterization
         faces = nr.vertices_to_faces(vertices, faces)
