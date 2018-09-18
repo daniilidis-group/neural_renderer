@@ -6,7 +6,9 @@ at::Tensor load_textures_cuda(
         at::Tensor image,
         at::Tensor faces,
         at::Tensor textures,
-        at::Tensor is_update);
+        at::Tensor is_update,
+        int texture_wrapping,
+        int use_bilinear);
 
 // C++ interface
 
@@ -19,18 +21,19 @@ at::Tensor load_textures(
         at::Tensor image,
         at::Tensor faces,
         at::Tensor textures,
-        at::Tensor is_update) {
+        at::Tensor is_update,
+        int texture_wrapping,
+        int use_bilinear) {
 
     CHECK_INPUT(image);
     CHECK_INPUT(faces);
     CHECK_INPUT(is_update);
     CHECK_INPUT(textures);
 
-    return load_textures_cuda(image, faces, textures, is_update);
+    return load_textures_cuda(image, faces, textures, is_update, texture_wrapping, use_bilinear);
                                       
 }
 
-//PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
-PYBIND11_MODULE(load_textures, m) {
+PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
     m.def("load_textures", &load_textures, "LOAD_TEXTURES (CUDA)");
 }
