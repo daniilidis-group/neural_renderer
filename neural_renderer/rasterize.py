@@ -46,6 +46,7 @@ class RasterizeFunction(Function):
             textures = torch.cuda.FloatTensor(1).fill_(0)
             ctx.texture_size = None
 
+
         face_index_map = torch.cuda.IntTensor(ctx.batch_size, ctx.image_size, ctx.image_size).fill_(-1)
         weight_map = torch.cuda.FloatTensor(ctx.batch_size, ctx.image_size, ctx.image_size, 3).fill_(0.0)
         depth_map = torch.cuda.FloatTensor(ctx.batch_size, ctx.image_size, ctx.image_size).fill_(ctx.far)
@@ -66,7 +67,6 @@ class RasterizeFunction(Function):
             face_inv_map = torch.cuda.FloatTensor(ctx.batch_size, ctx.image_size, ctx.image_size, 3, 3).fill_(0)
         else:
             face_inv_map = torch.cuda.FloatTensor(1).fill_(0)
-
 
         face_index_map, weight_map, depth_map, face_inv_map =\
             RasterizeFunction.forward_face_index_map(ctx, faces, face_index_map,
@@ -108,10 +108,9 @@ class RasterizeFunction(Function):
                 ctx.saved_tensors
         # initialize output buffers
         # no need for explicit allocation of cuda.FloatTensor because zeros_like does it automatically
-        grad_faces = torch.zeros_like(faces, dtype=torch.float32).to(ctx.device).contiguous()
-        grad_faces = torch.zeros_like(faces, dtype=torch.float32).to(ctx.device).contiguous()
+        grad_faces = torch.zeros_like(faces, dtype=torch.float32)
         if ctx.return_rgb:
-            grad_textures = torch.zeros_like(textures, dtype=torch.float32).to(ctx.device).contiguous()
+            grad_textures = torch.zeros_like(textures, dtype=torch.float32)
         else:
             grad_textures = torch.cuda.FloatTensor(1).fill_(0.0)
         
