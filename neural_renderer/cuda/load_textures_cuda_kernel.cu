@@ -41,12 +41,10 @@ __global__ void load_textures_cuda_kernel(
   scalar_t dim0 = ((i / (ts * ts)) % ts) / (ts - 1.) ;
   scalar_t dim1 = ((i / ts) % ts) / (ts - 1.);
   scalar_t dim2 = (i % ts) / (ts - 1.);
-  if (1 < dim0 + dim1 + dim2) {
-      float sum = dim0 + dim1 + dim2;
-      dim0 /= sum;
-      dim1 /= sum;
-      dim2 /= sum;
-  }
+  float sum = dim0 + dim1 + dim2;
+  dim0 /= sum;
+  dim1 /= sum;
+  dim2 /= sum;
   scalar_t* face = &faces[fn * 3 * 2];
   scalar_t* texture_ = &textures[i * 3];
 
