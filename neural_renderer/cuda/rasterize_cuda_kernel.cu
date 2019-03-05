@@ -198,7 +198,7 @@ __global__ void forward_texture_sampling_cuda_kernel(
         const int bn = i / (image_size * image_size);
         const int nf = num_faces;
         const int ts = texture_size;
-        const scalar_t* face = &faces[face_index * 9];
+        const scalar_t* face = &faces[(bn * nf + face_index) * 9];
         const scalar_t* texture = &textures[(bn * nf + face_index) * ts * ts * ts * 3];
         scalar_t* pixel = &rgb_map[i * 3];
         const scalar_t* weight = &weight_map[i * 3];
