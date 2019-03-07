@@ -23,6 +23,14 @@ For Python 3
 sudo python3 setup.py install
 ```
 
+If it fails, please make sure to install the respective package:
+```
+sudo apt-get install python-dev
+sudo apt-get install python3-dev
+sudo apt-get install python3.6-dev
+sudo apt-get install python3.7-dev
+```
+
 ## Running examples
 ```
 python ./examples/example1.py
