@@ -76,6 +76,8 @@ class Renderer(nn.Module):
         
         if mode is None:
             return self.render(vertices, faces, textures, K, R, t, dist_coeffs, orig_size)
+        elif mode is 'rgb':
+            return self.render_rgb(vertices, faces, textures, K, R, t, dist_coeffs, orig_size)
         elif mode == 'silhouettes':
             return self.render_silhouettes(vertices, faces, K, R, t, dist_coeffs, orig_size)
         elif mode == 'depth':
@@ -153,7 +155,7 @@ class Renderer(nn.Module):
         images = nr.rasterize_depth(faces, self.image_size, self.anti_aliasing)
         return images
 
-    def render(self, vertices, faces, textures, K=None, R=None, t=None, dist_coeffs=None, orig_size=None):
+    def render_rgb(self, vertices, faces, textures, K=None, R=None, t=None, dist_coeffs=None, orig_size=None):
         # fill back
         if self.fill_back:
             faces = torch.cat((faces, faces[:, :, list(reversed(range(faces.shape[-1])))]), dim=1).detach()
@@ -200,3 +202,51 @@ class Renderer(nn.Module):
             faces, textures, self.image_size, self.anti_aliasing, self.near, self.far, self.rasterizer_eps,
             self.background_color)
         return images
+
+    def render(self, vertices, faces, textures, K=None, R=None, t=None, dist_coeffs=None, orig_size=None):
+        # fill back
+        if self.fill_back:
+            faces = torch.cat((faces, faces[:, :, list(reversed(range(faces.shape[-1])))]), dim=1).detach()
+            textures = torch.cat((textures, textures.permute((0, 1, 4, 3, 2, 5))), dim=1)
+
+        # lighting
+        faces_lighting = nr.vertices_to_faces(vertices, faces)
+        textures = nr.lighting(
+            faces_lighting,
+            textures,
+            self.light_intensity_ambient,
+            self.light_intensity_directional,
+            self.light_color_ambient,
+            self.light_color_directional,
+            self.light_direction)
+
+        # viewpoint transformation
+        if self.camera_mode == 'look_at':
+            vertices = nr.look_at(vertices, self.eye)
+            # perspective transformation
+            if self.perspective:
+                vertices = nr.perspective(vertices, angle=self.viewing_angle)
+        elif self.camera_mode == 'look':
+            vertices = nr.look(vertices, self.eye, self.camera_direction)
+            # perspective transformation
+            if self.perspective:
+                vertices = nr.perspective(vertices, angle=self.viewing_angle)
+        elif self.camera_mode == 'projection':
+            if K is None:
+                K = self.K
+            if R is None:
+                R = self.R
+            if t is None:
+                t = self.t
+            if dist_coeffs is None:
+                dist_coeffs = self.dist_coeffs
+            if orig_size is None:
+                orig_size = self.orig_size
+            vertices = nr.projection(vertices, K, R, t, dist_coeffs, orig_size)
+
+        # rasterization
+        faces = nr.vertices_to_faces(vertices, faces)
+        out = nr.rasterize_rgbad(
+            faces, textures, self.image_size, self.anti_aliasing, self.near, self.far, self.rasterizer_eps,
+            self.background_color)
+        return out['rgb'], out['depth'], out['alpha']

@@ -35,6 +35,7 @@ def projection(vertices, K, R, t, dist_coeffs, orig_size, eps=1e-9):
     vertices = torch.stack([x__, y__, torch.ones_like(z)], dim=-1)
     vertices = torch.matmul(vertices, K.transpose(1,2))
     u, v = vertices[:, :, 0], vertices[:, :, 1]
+    v = orig_size - v
     # map u,v from [0, img_size] to [-1, 1] to use by the renderer
     u = 2 * (u - orig_size / 2.) / orig_size
     v = 2 * (v - orig_size / 2.) / orig_size

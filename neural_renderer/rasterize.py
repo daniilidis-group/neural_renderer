@@ -364,6 +364,35 @@ def rasterize(
     return rasterize_rgbad(
         faces, textures, image_size, anti_aliasing, near, far, eps, background_color, True, False, False)['rgb']
 
+def rasterize(
+        faces,
+        textures,
+        image_size=DEFAULT_IMAGE_SIZE,
+        anti_aliasing=DEFAULT_ANTI_ALIASING,
+        near=DEFAULT_NEAR,
+        far=DEFAULT_FAR,
+        eps=DEFAULT_EPS,
+        background_color=DEFAULT_BACKGROUND_COLOR):
+    """
+    Generate RGB images from faces and textures.
+
+    Args:
+        faces: see `rasterize_rgbad`.
+        textures: see `rasterize_rgbad`.
+        image_size: see `rasterize_rgbad`.
+        anti_aliasing: see `rasterize_rgbad`.
+        near: see `rasterize_rgbad`.
+        far: see `rasterize_rgbad`.
+        eps: see `rasterize_rgbad`.
+        background_color: see `rasterize_rgbad`.
+
+    Returns:
+        ~torch.Tensor: RGB images. The shape is [batch size, 3, image_size, image_size].
+
+    """
+    return rasterize_rgbad(
+        faces, textures, image_size, anti_aliasing, near, far, eps, background_color, True, False, False)['rgb']
+
 
 def rasterize_silhouettes(
         faces,
