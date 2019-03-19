@@ -120,3 +120,5 @@ examples/data/example2_optimization.gif
 
 # vscode
 .vscode/
+# pycharm
+.idea/

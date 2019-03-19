@@ -22,6 +22,8 @@ class Renderer(nn.Module):
         super(Renderer, self).__init__()
         # rendering
         self.image_size = image_size
+        if isinstance(image_size, tuple) or isinstance(image_size, list):
+            self.image_size = torch.cuda.IntTensor(self.image_size)
         self.anti_aliasing = anti_aliasing
         self.background_color = background_color
         self.fill_back = fill_back
@@ -48,6 +50,8 @@ class Renderer(nn.Module):
             if dist_coeffs is None:
                 self.dist_coeffs = torch.cuda.FloatTensor([[0., 0., 0., 0., 0.]])
             self.orig_size = orig_size
+            if isinstance(orig_size, tuple) or isinstance(orig_size, list):
+                self.orig_size = torch.cuda.IntTensor(self.orig_size)
         elif self.camera_mode in ['look', 'look_at']:
             self.perspective = perspective
             self.viewing_angle = viewing_angle
