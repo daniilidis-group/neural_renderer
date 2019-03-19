@@ -10,7 +10,7 @@ def projection(vertices, K, R, t, dist_coeffs, orig_size, eps=1e-9):
     K: batch_size * 3 * 3 intrinsic camera matrix
     R, t: batch_size * 3 * 3, batch_size * 1 * 3 extrinsic calibration parameters
     dist_coeffs: vector of distortion coefficients
-    orig_size: original size of image captured by the camera
+    orig_size: original size of image captured by the camera, (width, height)
     Returns: For each point [X,Y,Z] in world coordinates [u,v,z] where u,v are the coordinates of the projection in
     pixels and z is the depth
     '''
@@ -35,9 +35,9 @@ def projection(vertices, K, R, t, dist_coeffs, orig_size, eps=1e-9):
     vertices = torch.stack([x__, y__, torch.ones_like(z)], dim=-1)
     vertices = torch.matmul(vertices, K.transpose(1,2))
     u, v = vertices[:, :, 0], vertices[:, :, 1]
-    v = orig_size - v
+    v = float(orig_size[1]) - v
     # map u,v from [0, img_size] to [-1, 1] to use by the renderer
-    u = 2 * (u - orig_size / 2.) / orig_size
-    v = 2 * (v - orig_size / 2.) / orig_size
+    u = 2 * (u - float(orig_size[0]) / 2.) / float(orig_size[0])
+    v = 2 * (v - float(orig_size[1]) / 2.) / float(orig_size[1])
     vertices = torch.stack([u, v, z], dim=-1)
     return vertices

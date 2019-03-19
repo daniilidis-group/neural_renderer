@@ -11,7 +11,8 @@ std::vector<at::Tensor> forward_face_index_map_cuda(
         at::Tensor depth_map,
         at::Tensor face_inv_map,
         at::Tensor faces_inv,
-        int image_size,
+        int width,
+        int height,
         float near,
         float far,
         int return_rgb,
@@ -27,7 +28,8 @@ std::vector<at::Tensor> forward_texture_sampling_cuda(
         at::Tensor rgb_map,
         at::Tensor sampling_index_map,
         at::Tensor sampling_weight_map,
-        int image_size,
+        int width,
+        int height,
         float eps);
 
 at::Tensor backward_pixel_map_cuda(
@@ -38,7 +40,8 @@ at::Tensor backward_pixel_map_cuda(
         at::Tensor grad_rgb_map,
         at::Tensor grad_alpha_map,
         at::Tensor grad_faces,
-        int image_size,
+        int width,
+        int height,
         float eps,
         int return_rgb,
         int return_alpha);
@@ -59,7 +62,8 @@ at::Tensor backward_depth_map_cuda(
         at::Tensor weight_map,
         at::Tensor grad_depth_map,
         at::Tensor grad_faces,
-        int image_size);
+        int width,
+        int height);
 
 // C++ interface
 
@@ -74,7 +78,8 @@ std::vector<at::Tensor> forward_face_index_map(
         at::Tensor depth_map,
         at::Tensor face_inv_map,
         at::Tensor faces_inv,
-        int image_size,
+        int width,
+        int height,
         float near,
         float far,
         int return_rgb,
@@ -90,7 +95,7 @@ std::vector<at::Tensor> forward_face_index_map(
 
     return forward_face_index_map_cuda(faces, face_index_map, weight_map,
                                        depth_map, face_inv_map, faces_inv,
-                                       image_size, near, far,
+                                       width, height, near, far,
                                        return_rgb, return_alpha, return_depth);
 }
 
@@ -103,7 +108,8 @@ std::vector<at::Tensor> forward_texture_sampling(
         at::Tensor rgb_map,
         at::Tensor sampling_index_map,
         at::Tensor sampling_weight_map,
-        int image_size,
+        int width,
+        int height,
         float eps) {
 
     CHECK_INPUT(faces);
@@ -118,7 +124,7 @@ std::vector<at::Tensor> forward_texture_sampling(
     return forward_texture_sampling_cuda(faces, textures, face_index_map,
                                     weight_map, depth_map, rgb_map,
                                     sampling_index_map, sampling_weight_map,
-                                    image_size, eps);
+                                    width, height, eps);
 }
 
 at::Tensor backward_pixel_map(
@@ -129,7 +135,8 @@ at::Tensor backward_pixel_map(
         at::Tensor grad_rgb_map,
         at::Tensor grad_alpha_map,
         at::Tensor grad_faces,
-        int image_size,
+        int width,
+        int height,
         float eps,
         int return_rgb,
         int return_alpha) {
@@ -144,7 +151,7 @@ at::Tensor backward_pixel_map(
 
     return backward_pixel_map_cuda(faces, face_index_map, rgb_map, alpha_map,
                                    grad_rgb_map, grad_alpha_map, grad_faces,
-                                   image_size, eps, return_rgb, return_alpha);
+                                   width, height, eps, return_rgb, return_alpha);
 }
 
 at::Tensor backward_textures(
@@ -174,7 +181,8 @@ at::Tensor backward_depth_map(
         at::Tensor weight_map,
         at::Tensor grad_depth_map,
         at::Tensor grad_faces,
-        int image_size) {
+        int width,
+        int height) {
 
     CHECK_INPUT(faces);
     CHECK_INPUT(depth_map);
@@ -187,7 +195,7 @@ at::Tensor backward_depth_map(
     return backward_depth_map_cuda(faces, depth_map, face_index_map,
                                    face_inv_map, weight_map,
                                    grad_depth_map, grad_faces,
-                                   image_size);
+                                   width, height);
 }
 
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {

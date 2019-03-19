@@ -7,11 +7,13 @@ import numpy
 
 import neural_renderer as nr
 
+DEFAULT_IMAGE_SIZE = torch.tensor([256, 256]).int()
+DEFAULT_ORIG_SIZE = torch.tensor([1024, 768]).int()
 
 class Renderer(nn.Module):
-    def __init__(self, image_size=256, anti_aliasing=True, background_color=[0,0,0],
+    def __init__(self, image_size=DEFAULT_IMAGE_SIZE, anti_aliasing=True, background_color=[0,0,0],
                  fill_back=True, camera_mode='projection',
-                 K=None, R=None, t=None, dist_coeffs=None, orig_size=1024,
+                 K=None, R=None, t=None, dist_coeffs=None, orig_size=DEFAULT_ORIG_SIZE,
                  perspective=True, viewing_angle=30, camera_direction=[0,0,1],
                  near=0.1, far=100,
                  light_intensity_ambient=0.5, light_intensity_directional=0.5,
@@ -68,7 +70,7 @@ class Renderer(nn.Module):
         # rasterization
         self.rasterizer_eps = 1e-3
 
-    def forward(self, vertices, faces, textures=None, mode=None, K=None, R=None, t=None, dist_coeffs=None, orig_size=None):
+    def forward(self, vertices, faces, textures=None, mode='rgb', K=None, R=None, t=None, dist_coeffs=None, orig_size=None):
         '''
         Implementation of forward rendering method
         The old API is preserved for back-compatibility with the Chainer implementation
@@ -83,7 +85,7 @@ class Renderer(nn.Module):
         elif mode == 'depth':
             return self.render_depth(vertices, faces, K, R, t, dist_coeffs, orig_size)
         else:
-            raise ValueError("mode should be one of None, 'silhouettes' or 'depth'")
+            raise ValueError("mode should be one of None, 'rgb', 'silhouettes' or 'depth'")
 
     def render_silhouettes(self, vertices, faces, K=None, R=None, t=None, dist_coeffs=None, orig_size=None):
 

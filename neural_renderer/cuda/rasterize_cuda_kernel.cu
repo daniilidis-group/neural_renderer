@@ -26,13 +26,15 @@ __global__ void forward_face_index_map_cuda_kernel_1(
         scalar_t* __restrict__ faces_inv,
         int batch_size,
         int num_faces,
-        int image_size) {
+        int width,
+        int height) {
     /* batch number, face, number, image size, face[v012][RGB] */
+
+    const int shape[2] = {width, height};
     const int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i >= batch_size * num_faces) {
         return;
     }
-    const int is = image_size;
     const scalar_t* face = &faces[i * 9];
     scalar_t* face_inv_g = &faces_inv[i * 9];
 
@@ -44,7 +46,7 @@ __global__ void forward_face_index_map_cuda_kernel_1(
     scalar_t p[3][2];
     for (int num = 0; num < 3; num++) {
         for (int dim = 0; dim < 2; dim++) {
-            p[num][dim] = 0.5 * (face[3 * num + dim] * is + is - 1);
+            p[num][dim] = 0.5 * (face[3 * num + dim] * shape[dim] + shape[dim] - 1);
         }
     }
 
@@ -76,7 +78,8 @@ __global__ void forward_face_index_map_cuda_kernel_2(
         scalar_t* __restrict__ face_inv_map,
         int batch_size,
         int num_faces,
-        int image_size,
+        int width,
+        int height,
         scalar_t near,
         scalar_t far,
         int return_rgb,
@@ -84,17 +87,16 @@ __global__ void forward_face_index_map_cuda_kernel_2(
         int return_depth) {
 
     const int i = blockIdx.x * blockDim.x + threadIdx.x;
-    if (i >= batch_size * image_size * image_size) {
+    if (i >= batch_size * width * height) {
         return;
     }
-    const int is = image_size;
     const int nf = num_faces;
-    const int bn = i / (is * is);
-    const int pn = i % (is * is);
-    const int yi = pn / is;
-    const int xi = pn % is;
-    const scalar_t yp = (2. * yi + 1 - is) / is;
-    const scalar_t xp = (2. * xi + 1 - is) / is;
+    const int bn = i / (width * height);
+    const int pn = i % (width * height);
+    const int yi = pn / width;
+    const int xi = pn % width;
+    const scalar_t yp = (2. * yi + 1 - height) / height;
+    const scalar_t xp = (2. * xi + 1 - width) / width;
     
     const scalar_t* face = &faces[bn * nf * 9] - 9;
     scalar_t* face_inv = &faces_inv[bn * nf * 9] - 9;
@@ -180,11 +182,12 @@ __global__ void forward_texture_sampling_cuda_kernel(
         scalar_t* sampling_weight_map,
         size_t batch_size,
         int num_faces,
-        int image_size,
+        int width,
+        int height,
         int texture_size,
         scalar_t eps) {
     const int i = blockIdx.x * blockDim.x + threadIdx.x;
-    if (i >= batch_size * image_size * image_size) {
+    if (i >= batch_size * width * height) {
         return;
     }
     const int face_index = face_index_map[i];
@@ -195,7 +198,7 @@ __global__ void forward_texture_sampling_cuda_kernel(
             batch number, num of faces, image_size, face[v012][RGB], pixel[RGB], weight[v012],
             texture[ts][ts][ts][RGB], sampling indices[8], sampling_weights[8];
         */
-        const int bn = i / (image_size * image_size);
+        const int bn = i / (width * height);
         const int nf = num_faces;
         const int ts = texture_size;
         const scalar_t* face = &faces[(bn * nf + face_index) * 9];
@@ -252,7 +255,8 @@ __global__ void backward_pixel_map_cuda_kernel(
         scalar_t*  grad_faces,
         size_t batch_size,
         size_t num_faces,
-        int image_size,
+        int width,
+        int height,
         scalar_t eps,
         int return_rgb,
         int return_alpha) {
@@ -260,9 +264,9 @@ __global__ void backward_pixel_map_cuda_kernel(
     if (i >= batch_size * num_faces) {
         return;
     }
+    const int shape[2] = {width, height};
     const int bn = i / num_faces;
     const int fn = i % num_faces;
-    const int is = image_size;
     const scalar_t* face = &faces[i * 9];
     scalar_t grad_face[9] = {};
 
@@ -279,7 +283,7 @@ __global__ void backward_pixel_map_cuda_kernel(
             pi[num] = (edge_num + num) % 3;
         for (int num = 0; num < 3; num++) {
             for (int dim = 0; dim < 2; dim++) {
-                pp[num][dim] = 0.5 * (face[3 * pi[num] + dim] * is + is - 1);
+                pp[num][dim] = 0.5 * (face[3 * pi[num] + dim] * shape[dim] + shape[dim] - 1);
             }
         }
 
@@ -310,7 +314,7 @@ __global__ void backward_pixel_map_cuda_kernel(
             /* along edge */
             int d0_from, d0_to;
             d0_from = max(ceil(min(p[0][0], p[1][0])), 0.);
-            d0_to = min(max(p[0][0], p[1][0]), is - 1.);
+            d0_to = min(max(p[0][0], p[1][0]), shape[axis] - 1.);
             for (int d0 = d0_from; d0 <= d0_to; d0++) {
                 /* get cross point */
                 int d1_in, d1_out;
@@ -322,9 +326,9 @@ __global__ void backward_pixel_map_cuda_kernel(
                 d1_out = d1_in + direction;
 
                 /* continue if cross point is not shown */
-                if (d1_in < 0 || is <= d1_in)
+                if (d1_in < 0 || shape[1-axis] <= d1_in)
                     continue;
-                if (d1_out < 0 || is <= d1_out)
+                if (d1_out < 0 || shape[1-axis] <= d1_out)
                     continue;
 
                 /* get color of in-pixel and out-pixel */
@@ -334,12 +338,12 @@ __global__ void backward_pixel_map_cuda_kernel(
                 scalar_t *rgb_out;
                 int map_index_in, map_index_out;
                 if (axis == 0) {
-                    map_index_in = bn * is * is + d1_in * is + d0;
-                    map_index_out = bn * is * is + d1_out * is + d0;
+                    map_index_in = bn * width * height + d1_in * width + d0;
+                    map_index_out = bn * width * height + d1_out * width + d0;
                 }
                 else {
-                    map_index_in = bn * is * is + d0 * is + d1_in;
-                    map_index_out = bn * is * is + d0 * is + d1_out;
+                    map_index_in = bn * width * height + d0 * width + d1_in;
+                    map_index_out = bn * width * height + d0 * width + d1_out;
                 }
                 if (return_alpha) {
                     alpha_in = alpha_map[map_index_in];
@@ -355,23 +359,23 @@ __global__ void backward_pixel_map_cuda_kernel(
                 if (is_in_fn) {
                     int d1_limit;
                     if (0 < direction)
-                        d1_limit = is - 1;
+                        d1_limit = shape[1-axis] - 1;
                     else
                         d1_limit = 0;
                     int d1_from = max(min(d1_out, d1_limit), 0);
-                    int d1_to = min(max(d1_out, d1_limit), is - 1);
+                    int d1_to = min(max(d1_out, d1_limit), shape[1-axis] - 1);
                     scalar_t* alpha_map_p;
                     scalar_t* grad_alpha_map_p;
                     scalar_t* rgb_map_p;
                     scalar_t* grad_rgb_map_p;
                     int map_offset, map_index_from;
                     if (axis == 0) {
-                        map_offset = is;
-                        map_index_from = bn * is * is + d1_from * is + d0;
+                        map_offset = width;
+                        map_index_from = bn * width * height + d1_from * width + d0;
                     }
                     else {
                         map_offset = 1;
-                        map_index_from = bn * is * is + d0 * is + d1_from;
+                        map_index_from = bn * width * height + d0 * width + d1_from;
                     }
                     if (return_alpha) {
                         alpha_map_p = &alpha_map[map_index_from];
@@ -401,12 +405,12 @@ __global__ void backward_pixel_map_cuda_kernel(
                         if (diff_grad <= 0)
                             continue;
                         if (p[1][0] != d0) {
-                            scalar_t dist = (p[1][0] - p[0][0]) / (p[1][0] - d0) * (d1 - d1_cross) * 2. / is;
+                            scalar_t dist = (p[1][0] - p[0][0]) / (p[1][0] - d0) * (d1 - d1_cross) * 2. / shape[1-axis];
                             dist = (0 < dist) ? dist + eps : dist - eps;
                             grad_face[pi[0] * 3 + (1 - axis)] -= diff_grad / dist;
                         }
                         if (p[0][0] != d0) {
-                            scalar_t dist = (p[1][0] - p[0][0]) / (d0 - p[0][0]) * (d1 - d1_cross) * 2. / is;
+                            scalar_t dist = (p[1][0] - p[0][0]) / (d0 - p[0][0]) * (d1 - d1_cross) * 2. / shape[1-axis];
                             dist = (0 < dist) ? dist + eps : dist - eps;
                             grad_face[pi[1] * 3 + (1 - axis)] -= diff_grad / dist;
                         }
@@ -428,7 +432,7 @@ __global__ void backward_pixel_map_cuda_kernel(
                     else
                         d1_limit = floor(d0_cross2);
                     int d1_from = max(min(d1_in, d1_limit), 0);
-                    int d1_to = min(max(d1_in, d1_limit), is - 1);
+                    int d1_to = min(max(d1_in, d1_limit), shape[1-axis] - 1);
 
                     int* face_index_map_p;
                     scalar_t* alpha_map_p;
@@ -438,14 +442,14 @@ __global__ void backward_pixel_map_cuda_kernel(
                     int map_index_from;
                     int map_offset;
                     if (axis == 0)
-                        map_offset = is;
+                        map_offset = width;
                     else
                         map_offset = 1;
                     if (axis == 0) {
-                        map_index_from = bn * is * is + d1_from * is + d0;
+                        map_index_from = bn * width * height + d1_from * width + d0;
                     }
                     else {
-                        map_index_from = bn * is * is + d0 * is + d1_from;
+                        map_index_from = bn * width * height + d0 * width + d1_from;
                     }
                     face_index_map_p = &face_index_map[map_index_from] - map_offset;
                     if (return_alpha) {
@@ -482,12 +486,12 @@ __global__ void backward_pixel_map_cuda_kernel(
                             continue;
 
                         if (p[1][0] != d0) {
-                            scalar_t dist = (p[1][0] - p[0][0]) / (p[1][0] - d0) * (d1 - d1_cross) * 2. / is;
+                            scalar_t dist = (p[1][0] - p[0][0]) / (p[1][0] - d0) * (d1 - d1_cross) * 2. / shape[1-axis];
                             dist = (0 < dist) ? dist + eps : dist - eps;
                             grad_face[pi[0] * 3 + (1 - axis)] -= diff_grad / dist;
                         }
                         if (p[0][0] != d0) {
-                            scalar_t dist = (p[1][0] - p[0][0]) / (d0 - p[0][0]) * (d1 - d1_cross) * 2. / is;
+                            scalar_t dist = (p[1][0] - p[0][0]) / (d0 - p[0][0]) * (d1 - d1_cross) * 2. / shape[1-axis];
                             dist = (0 < dist) ? dist + eps : dist - eps;
                             grad_face[pi[1] * 3 + (1 - axis)] -= diff_grad / dist;
                         }
@@ -511,19 +515,19 @@ __global__ void backward_textures_cuda_kernel(
         scalar_t* grad_textures,
         size_t batch_size,
         size_t num_faces,
-        int image_size,
+        int width,
+        int height,
         size_t texture_size) {
 
     const int i = blockIdx.x * blockDim.x + threadIdx.x;
-    if (i >= batch_size * image_size * image_size) {
+    if (i >= batch_size * width * height) {
         return;
     }
     const int face_index = face_index_map[i];
     if (0 <= face_index) {
-        int is = image_size;
         int nf = num_faces;
         int ts = texture_size;
-        int bn = i / (is * is);    // batch number [0 -> bs]
+        int bn = i / (width * height);    // batch number [0 -> bs]
     
         scalar_t* grad_texture = &grad_textures[(bn * nf + face_index) * ts * ts * ts * 3];
         scalar_t* sampling_weight_map_p = &sampling_weight_map[i * 8];
@@ -550,17 +554,18 @@ __global__ void backward_depth_map_cuda_kernel(
         scalar_t*  grad_faces,
         size_t batch_size,
         size_t num_faces,
-        int image_size) {
+        int width,
+        int height) {
     
+    const int shape[2] = {width, height};
     const int i = blockIdx.x * blockDim.x + threadIdx.x;
-    if (i >= batch_size * image_size * image_size) {
+    if (i >= batch_size * width * height) {
         return;
     }
     const int fn = face_index_map[i];
     if (0 <= fn) {
         const int nf = num_faces;
-        const int is = image_size;
-        const int bn = i / (is * is);
+        const int bn = i / (width * height);
         const scalar_t* face = &faces[(bn * nf + fn) * 9];
         const scalar_t depth = depth_map[i];
         const scalar_t depth2 = depth * depth;
@@ -585,7 +590,7 @@ __global__ void backward_depth_map_cuda_kernel(
         for (int k = 0; k < 3; k++) {
             for (int l = 0; l < 2; l++) {
             // k: point number, l: dimension
-            atomicAdd(&grad_face[3 * k + l], -grad_depth * tmp[l] * weight[k] * depth2 * is / 2);
+            atomicAdd(&grad_face[3 * k + l], -grad_depth * tmp[l] * weight[k] * depth2 * shape[l] / 2);
             }
         }
     }
@@ -599,7 +604,8 @@ std::vector<at::Tensor> forward_face_index_map_cuda(
         at::Tensor depth_map,
         at::Tensor face_inv_map,
         at::Tensor faces_inv,
-        int image_size,
+        int width,
+        int height,
         float near,
         float far,
         int return_rgb,
@@ -617,14 +623,14 @@ std::vector<at::Tensor> forward_face_index_map_cuda(
           faces_inv.data<scalar_t>(),
           batch_size,
           num_faces,
-          image_size);
+          width, height);
       }));
 
     cudaError_t err = cudaGetLastError();
     if (err != cudaSuccess) 
             printf("Error in forward_face_index_map_1: %s\n", cudaGetErrorString(err));
 
-    const dim3 blocks_2 ((batch_size * image_size * image_size - 1) / threads +1);
+    const dim3 blocks_2 ((batch_size * width * height - 1) / threads +1);
     AT_DISPATCH_FLOATING_TYPES(faces.type(), "forward_face_index_map_cuda_2", ([&] {
       forward_face_index_map_cuda_kernel_2<scalar_t><<<blocks_2, threads>>>(
           faces.data<scalar_t>(),
@@ -635,7 +641,8 @@ std::vector<at::Tensor> forward_face_index_map_cuda(
           face_inv_map.data<scalar_t>(),
           (int) batch_size,
           (int) num_faces,
-          (int) image_size,
+          (int) width, 
+          (int) height,
           (scalar_t) near,
           (scalar_t) far,
           return_rgb,
@@ -657,14 +664,15 @@ std::vector<at::Tensor> forward_texture_sampling_cuda( at::Tensor faces,
         at::Tensor rgb_map,
         at::Tensor sampling_index_map,
         at::Tensor sampling_weight_map,
-        int image_size,
+        int width,
+        int height,
         float eps) {
 
     const auto batch_size = faces.size(0);
     const auto num_faces = faces.size(1);
     const auto texture_size = textures.size(2);
     const int threads = 512;
-    const dim3 blocks ((batch_size * image_size * image_size - 1) / threads + 1);
+    const dim3 blocks ((batch_size * width * height - 1) / threads + 1);
 
     AT_DISPATCH_FLOATING_TYPES(faces.type(), "forward_texture_sampling_cuda", ([&] {
       forward_texture_sampling_cuda_kernel<scalar_t><<<blocks, threads>>>(
@@ -678,7 +686,8 @@ std::vector<at::Tensor> forward_texture_sampling_cuda( at::Tensor faces,
 		  sampling_weight_map.data<scalar_t>(),
           batch_size,
 		  num_faces,
-          image_size,
+          width,
+          height,
           texture_size,
           eps);
       }));
@@ -698,7 +707,8 @@ at::Tensor backward_pixel_map_cuda(
         at::Tensor grad_rgb_map,
         at::Tensor grad_alpha_map,
         at::Tensor grad_faces,
-        int image_size,
+        int width,
+        int height,
         float eps,
         int return_rgb,
         int return_alpha) {
@@ -719,7 +729,8 @@ at::Tensor backward_pixel_map_cuda(
           grad_faces.data<scalar_t>(),
           batch_size,
 		  num_faces,
-          image_size,
+          width,
+          height,
           (scalar_t) eps,
           return_rgb,
           return_alpha);
@@ -741,10 +752,11 @@ at::Tensor backward_textures_cuda(
         int num_faces) {
 
     const auto batch_size = face_index_map.size(0);
-    const auto image_size = face_index_map.size(1);
+    const auto height = face_index_map.size(1);
+    const auto width = face_index_map.size(2);
     const auto texture_size = grad_textures.size(2);
     const int threads = 512;
-    const dim3 blocks ((batch_size * image_size * image_size - 1) / threads + 1);
+    const dim3 blocks ((batch_size * width * height - 1) / threads + 1);
 
     AT_DISPATCH_FLOATING_TYPES(sampling_weight_map.type(), "backward_textures_cuda", ([&] {
       backward_textures_cuda_kernel<scalar_t><<<blocks, threads>>>(
@@ -755,7 +767,8 @@ at::Tensor backward_textures_cuda(
           grad_textures.data<scalar_t>(),
           batch_size,
           num_faces,
-          image_size,
+          width,
+          height,
           texture_size);
       }));
 
@@ -773,12 +786,13 @@ at::Tensor backward_depth_map_cuda(
         at::Tensor weight_map,
         at::Tensor grad_depth_map,
         at::Tensor grad_faces,
-        int image_size) {
+        int width,
+        int height) {
 
     const auto batch_size = faces.size(0);
     const auto num_faces = faces.size(1);
     const int threads = 512;
-    const dim3 blocks ((batch_size * image_size * image_size - 1) / threads + 1);
+    const dim3 blocks ((batch_size * width * height - 1) / threads + 1);
 
     AT_DISPATCH_FLOATING_TYPES(faces.type(), "backward_depth_map_cuda", ([&] {
       backward_depth_map_cuda_kernel<scalar_t><<<blocks, threads>>>(
@@ -791,7 +805,8 @@ at::Tensor backward_depth_map_cuda(
           grad_faces.data<scalar_t>(),
           batch_size,
           num_faces,
-          image_size);
+          width,
+          height);
       }));
 
     cudaError_t err = cudaGetLastError();
