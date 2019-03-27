@@ -5,6 +5,7 @@ import numpy as np
 from skimage.io import imsave
 
 import neural_renderer as nr
+import torch
 
 current_dir = os.path.dirname(os.path.realpath(__file__))
 data_dir = os.path.join(current_dir, 'data')
@@ -28,11 +29,11 @@ class TestCore(unittest.TestCase):
 
         obj_file = os.path.join(data_dir, 'tetrahedron.obj')
         vertices, faces = nr.load_obj(obj_file, False)
-        assert (np.allclose(vertices_ref, vertices))
-        assert (np.allclose(faces_ref, faces))
+        assert (np.allclose(vertices_ref, vertices.detach().cpu().numpy()))
+        assert (np.allclose(faces_ref, faces.detach().cpu().numpy()))
         vertices, faces = nr.load_obj(obj_file, True)
-        assert (np.allclose(vertices_ref * 2 - 1.0, vertices))
-        assert (np.allclose(faces_ref, faces))
+        assert (np.allclose(vertices_ref * 2 - 1.0, vertices.detach().cpu().numpy()))
+        assert (np.allclose(faces_ref, faces.detach().cpu().numpy()))
 
     def test_teapot(self):
         obj_file = os.path.join(data_dir, 'teapot.obj')
@@ -47,13 +48,15 @@ class TestCore(unittest.TestCase):
             os.path.join(data_dir, '1cde62b063e14777c9152a706245d48/model.obj'), load_texture=True)
 
         renderer.eye = nr.get_points_from_angles(2, 15, 30)
-        images = renderer.render(vertices[None, :, :], faces[None, :, :], textures[None, :, :, :, :, :]).permute(0,2,3,1).detach().cpu().numpy()
+        images, _, _ = renderer.render(vertices[None, :, :], faces[None, :, :], textures[None, :, :, :, :, :])
+        images = images.permute(0,2,3,1).detach().cpu().numpy()
         imsave(os.path.join(data_dir, 'car.png'), images[0])
 
         vertices, faces, textures = nr.load_obj(
             os.path.join(data_dir, '4e49873292196f02574b5684eaec43e9/model.obj'), load_texture=True, texture_size=16)
         renderer.eye = nr.get_points_from_angles(2, 15, -90)
-        images = renderer.render(vertices[None, :, :], faces[None, :, :], textures[None, :, :, :, :, :]).permute(0,2,3,1).detach().cpu().numpy()
+        images, _, _ = renderer.render(vertices[None, :, :], faces[None, :, :], textures[None, :, :, :, :, :])
+        images = images.permute(0,2,3,1).detach().cpu().numpy()
         imsave(os.path.join(data_dir, 'display.png'), images[0])
 
 

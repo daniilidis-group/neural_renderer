@@ -7,23 +7,23 @@ import numpy
 
 import neural_renderer as nr
 
-DEFAULT_IMAGE_SIZE = torch.tensor([256, 256]).int()
-DEFAULT_ORIG_SIZE = torch.tensor([1024, 768]).int()
 
 class Renderer(nn.Module):
-    def __init__(self, image_size=DEFAULT_IMAGE_SIZE, anti_aliasing=True, background_color=[0,0,0],
+    def __init__(self, image_size=256, anti_aliasing=True, background_color=[0, 0, 0],
                  fill_back=True, camera_mode='projection',
-                 K=None, R=None, t=None, dist_coeffs=None, orig_size=DEFAULT_ORIG_SIZE,
-                 perspective=True, viewing_angle=30, camera_direction=[0,0,1],
+                 K=None, R=None, t=None, dist_coeffs=None, orig_size=(1024, 768),
+                 perspective=True, viewing_angle=30, camera_direction=[0, 0, 1],
                  near=0.1, far=100,
                  light_intensity_ambient=0.5, light_intensity_directional=0.5,
-                 light_color_ambient=[1,1,1], light_color_directional=[1,1,1],
-                 light_direction=[0,1,0]):
+                 light_color_ambient=[1, 1, 1], light_color_directional=[1, 1, 1],
+                 light_direction=[0, 1, 0]):
         super(Renderer, self).__init__()
+        # setters for properties
+        self.image_size_ = None
+        self.orig_size_ = None
+
         # rendering
         self.image_size = image_size
-        if isinstance(image_size, tuple) or isinstance(image_size, list):
-            self.image_size = torch.cuda.IntTensor(self.image_size)
         self.anti_aliasing = anti_aliasing
         self.background_color = background_color
         self.fill_back = fill_back
@@ -50,8 +50,6 @@ class Renderer(nn.Module):
             if dist_coeffs is None:
                 self.dist_coeffs = torch.cuda.FloatTensor([[0., 0., 0., 0., 0.]])
             self.orig_size = orig_size
-            if isinstance(orig_size, tuple) or isinstance(orig_size, list):
-                self.orig_size = torch.cuda.IntTensor(self.orig_size)
         elif self.camera_mode in ['look', 'look_at']:
             self.perspective = perspective
             self.viewing_angle = viewing_angle
@@ -59,7 +57,6 @@ class Renderer(nn.Module):
             self.camera_direction = [0, 0, 1]
         else:
             raise ValueError('Camera mode has to be one of projection, look or look_at')
-
 
         self.near = near
         self.far = far
@@ -69,17 +66,48 @@ class Renderer(nn.Module):
         self.light_intensity_directional = light_intensity_directional
         self.light_color_ambient = light_color_ambient
         self.light_color_directional = light_color_directional
-        self.light_direction = light_direction 
+        self.light_direction = light_direction
 
         # rasterization
         self.rasterizer_eps = 1e-3
 
-    def forward(self, vertices, faces, textures=None, mode='rgb', K=None, R=None, t=None, dist_coeffs=None, orig_size=None):
+    @staticmethod
+    def toShapeTensor(value):
+        if isinstance(value, tuple) or isinstance(value, list) \
+                or isinstance(value, numpy.ndarray) or isinstance(value, torch.Tensor):
+            return torch.cuda.IntTensor(value)
+        elif isinstance(value, int) or isinstance(value, float):
+            return torch.cuda.IntTensor([value, value])
+        else:
+            assert False
+
+    @property
+    def image_size(self):
+        if self.image_size_ is None:
+            return torch.cuda.IntTensor([256, 256])
+        return self.image_size_
+
+    @image_size.setter
+    def image_size(self, value):
+        self.image_size_ = Renderer.toShapeTensor(value)
+
+    @property
+    def orig_size(self):
+        if self.orig_size_ is None:
+            return torch.cuda.IntTensor([1024, 768])
+        return self.orig_size_
+
+    @image_size.setter
+    def orig_size(self, value):
+        self.orig_size_ = Renderer.toShapeTensor(value)
+
+    def forward(self, vertices, faces, textures=None, mode='rgb', K=None, R=None, t=None, dist_coeffs=None,
+                orig_size=None):
         '''
         Implementation of forward rendering method
         The old API is preserved for back-compatibility with the Chainer implementation
         '''
-        
+
         if mode is None:
             return self.render(vertices, faces, textures, K, R, t, dist_coeffs, orig_size)
         elif mode is 'rgb':

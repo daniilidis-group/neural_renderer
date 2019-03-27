@@ -64,7 +64,7 @@ class TestRasterizeSilhouettes(unittest.TestCase):
         loss = torch.sum(torch.abs(images[:, pyi, pxi] - 1))
         loss.backward()
 
-        assert(np.allclose(vertices.grad, grad_ref, rtol=1e-2))
+        assert(torch.allclose(vertices.grad, grad_ref, rtol=1e-2))
 
     def test_backward_case2(self):
         """Backward if non-zero gradient is on a face."""
@@ -96,7 +96,7 @@ class TestRasterizeSilhouettes(unittest.TestCase):
         loss = torch.sum(torch.abs(images[:, pyi, pxi]))
         loss.backward()
 
-        assert(np.allclose(vertices.grad, grad_ref, rtol=1e-2))
+        assert(torch.allclose(vertices.grad, grad_ref, rtol=1e-2))
 
 
 if __name__ == '__main__':
