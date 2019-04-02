@@ -75,7 +75,7 @@ class Renderer(nn.Module):
     def toShapeTensor(value):
         if isinstance(value, tuple) or isinstance(value, list) \
                 or isinstance(value, numpy.ndarray) or isinstance(value, torch.Tensor):
-            return torch.cuda.IntTensor(value)
+            return torch.cuda.IntTensor(list(value))
         elif isinstance(value, int) or isinstance(value, float):
             return torch.cuda.IntTensor([value, value])
         else:
@@ -97,7 +97,7 @@ class Renderer(nn.Module):
             return torch.cuda.IntTensor([1024, 768])
         return self.orig_size_
 
-    @image_size.setter
+    @orig_size.setter
     def orig_size(self, value):
         self.orig_size_ = Renderer.toShapeTensor(value)
 
