@@ -5,7 +5,7 @@ from torch.autograd import Function
 
 import neural_renderer.cuda.rasterize as rasterize_cuda
 
-DEFAULT_IMAGE_SIZE = 256
+DEFAULT_IMAGE_SIZE = torch.tensor([256, 256]).int()
 DEFAULT_ANTI_ALIASING = True
 DEFAULT_NEAR = 0.1
 DEFAULT_FAR = 100
@@ -24,7 +24,8 @@ class RasterizeFunction(Function):
         '''
         Forward pass
         '''
-        ctx.image_size = image_size
+        ctx.width = int(image_size[0])
+        ctx.height = int(image_size[1])
         ctx.near = near
         ctx.far = far
         ctx.eps = eps
@@ -47,24 +48,24 @@ class RasterizeFunction(Function):
             ctx.texture_size = None
 
 
-        face_index_map = torch.cuda.IntTensor(ctx.batch_size, ctx.image_size, ctx.image_size).fill_(-1)
-        weight_map = torch.cuda.FloatTensor(ctx.batch_size, ctx.image_size, ctx.image_size, 3).fill_(0.0)
-        depth_map = torch.cuda.FloatTensor(ctx.batch_size, ctx.image_size, ctx.image_size).fill_(ctx.far)
+        face_index_map = torch.cuda.IntTensor(ctx.batch_size, ctx.height, ctx.width).fill_(-1)
+        weight_map = torch.cuda.FloatTensor(ctx.batch_size, ctx.height, ctx.width, 3).fill_(0.0)
+        depth_map = torch.cuda.FloatTensor(ctx.batch_size, ctx.height, ctx.width).fill_(ctx.far)
 
         if ctx.return_rgb:
-            rgb_map = torch.cuda.FloatTensor(ctx.batch_size, ctx.image_size, ctx.image_size, 3).fill_(0)
-            sampling_index_map = torch.cuda.IntTensor(ctx.batch_size, ctx.image_size, ctx.image_size, 8).fill_(0)
-            sampling_weight_map = torch.cuda.FloatTensor(ctx.batch_size, ctx.image_size, ctx.image_size, 8).fill_(0)
+            rgb_map = torch.cuda.FloatTensor(ctx.batch_size, ctx.height, ctx.width, 3).fill_(0)
+            sampling_index_map = torch.cuda.IntTensor(ctx.batch_size, ctx.height, ctx.width, 8).fill_(0)
+            sampling_weight_map = torch.cuda.FloatTensor(ctx.batch_size, ctx.height, ctx.width, 8).fill_(0)
         else:
             rgb_map = torch.cuda.FloatTensor(1).fill_(0)
             sampling_index_map = torch.cuda.FloatTensor(1).fill_(0)
             sampling_weight_map = torch.cuda.FloatTensor(1).fill_(0)
         if ctx.return_alpha:
-            alpha_map = torch.cuda.FloatTensor(ctx.batch_size, ctx.image_size, ctx.image_size).fill_(0)
+            alpha_map = torch.cuda.FloatTensor(ctx.batch_size, ctx.height, ctx.width).fill_(0)
         else:
             alpha_map = torch.cuda.FloatTensor(1).fill_(0)
         if ctx.return_depth:
-            face_inv_map = torch.cuda.FloatTensor(ctx.batch_size, ctx.image_size, ctx.image_size, 3, 3).fill_(0)
+            face_inv_map = torch.cuda.FloatTensor(ctx.batch_size, ctx.height, ctx.width, 3, 3).fill_(0)
         else:
             face_inv_map = torch.cuda.FloatTensor(1).fill_(0)
 
@@ -161,7 +162,7 @@ class RasterizeFunction(Function):
         faces_inv = torch.zeros_like(faces)
         return rasterize_cuda.forward_face_index_map(faces, face_index_map, weight_map,
                                         depth_map, face_inv_map, faces_inv,
-                                        ctx.image_size, ctx.near, ctx.far,
+                                        ctx.width, ctx.height, ctx.near, ctx.far,
                                         ctx.return_rgb, ctx.return_alpha,
                                         ctx.return_depth)
 
@@ -175,7 +176,7 @@ class RasterizeFunction(Function):
             return rasterize_cuda.forward_texture_sampling(faces, textures, face_index_map,
                                            weight_map, depth_map, rgb_map,
                                            sampling_index_map, sampling_weight_map,
-                                           ctx.image_size, ctx.eps)
+                                           ctx.width, ctx.height, ctx.eps)
 
     @staticmethod
     def forward_alpha_map(ctx, alpha_map, face_index_map):
@@ -202,7 +203,7 @@ class RasterizeFunction(Function):
         else:
             return rasterize_cuda.backward_pixel_map(faces, face_index_map, rgb_map,
                                      alpha_map, grad_rgb_map, grad_alpha_map,
-                                     grad_faces, ctx.image_size, ctx.eps, ctx.return_rgb,
+                                     grad_faces, ctx.width, ctx.height, ctx.eps, ctx.return_rgb,
                                      ctx.return_alpha)
 
     @staticmethod
@@ -223,7 +224,7 @@ class RasterizeFunction(Function):
         else:
             return rasterize_cuda.backward_depth_map(faces, depth_map, face_index_map,
                                      face_inv_map, weight_map,
-                                     grad_depth_map, grad_faces, ctx.image_size)
+                                     grad_depth_map, grad_faces, ctx.width, ctx.height)
 
 class Rasterize(nn.Module):
     '''
