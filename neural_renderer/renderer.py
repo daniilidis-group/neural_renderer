@@ -36,12 +36,6 @@ class Renderer(nn.Module):
                 self.R = torch.cuda.FloatTensor(self.R)
             if isinstance(self.t, numpy.ndarray):
                 self.t = torch.cuda.FloatTensor(self.t)
-            # if self.K is None or self.K.ndimension() != 3 or self.K.shape[1] != 3 or self.K.shape[2] != 3:
-            #     raise ValueError('You need to provide a valid (batch_size)x3x3 intrinsic camera matrix')
-            # if self.R is None or self.R.ndimension() != 3 or self.R.shape[1] != 3 or self.R.shape[2] != 3:
-            #     raise ValueError('You need to provide a valid (batch_size)x3x3 rotation matrix')
-            # if self.t is None or self.t.ndimension() != 2 or self.t.shape[1] != 3:
-            #     raise ValueError('You need to provide a valid (batch_size)x3 translation vector matrix')
             self.dist_coeffs = dist_coeffs
             if dist_coeffs is None:
                 self.dist_coeffs = torch.cuda.FloatTensor([[0., 0., 0., 0., 0.]])

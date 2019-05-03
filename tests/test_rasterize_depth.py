@@ -75,7 +75,7 @@ class TestRasterizeDepth(unittest.TestCase):
         loss = torch.sum((images[0, 15, 20] - 1)**2)
         loss.backward()
         grad = vertices.grad.clone()
-        grad2 = np.zeros_like(grad)
+        grad2 = torch.zeros_like(grad)
 
         for i in range(3):
             for j in range(3):
@@ -86,7 +86,7 @@ class TestRasterizeDepth(unittest.TestCase):
                 loss2 = torch.sum((images[0, 15, 20] - 1)**2)
                 grad2[i, j] = ((loss2 - loss) / eps).item()
 
-        assert(np.allclose(grad, grad2, atol=1e-3))
+        assert(torch.allclose(grad, grad2, atol=1e-3))
 
 
 if __name__ == '__main__':

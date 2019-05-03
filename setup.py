@@ -25,8 +25,6 @@ ext_modules=[
         ]),
     ]
 
-INSTALL_REQUIREMENTS = ['numpy', 'torch', 'torchvision', 'scikit-image', 'tqdm', 'imageio']
-
 setup(
     description='PyTorch implementation of "A 3D mesh renderer for neural networks"',
     author='Nikolaos Kolotouros',
@@ -36,7 +34,6 @@ setup(
     name='neural_renderer',
     test_suite='setup.test_all',
     packages=['neural_renderer', 'neural_renderer.cuda'],
-    install_requires=INSTALL_REQUIREMENTS,
     ext_modules=ext_modules,
     cmdclass = {'build_ext': BuildExtension}
 )

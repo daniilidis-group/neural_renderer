@@ -27,7 +27,7 @@ class TestRasterize(unittest.TestCase):
         renderer.anti_aliasing = False
 
         # render
-        images = renderer(vertices, faces, textures)
+        images, _, _ = renderer(vertices, faces, textures)
         images = images.detach().cpu().numpy()
         image = images[2]
         image = image.transpose((1, 2, 0))
@@ -48,7 +48,7 @@ class TestRasterize(unittest.TestCase):
         renderer.eye = [1, 1, -2.7]
 
         # render
-        images = renderer(vertices, faces, textures)
+        images, _, _ = renderer(vertices, faces, textures)
         images = images.detach().cpu().numpy()
         image = images[2]
         image = image.transpose((1, 2, 0))
@@ -71,7 +71,7 @@ class TestRasterize(unittest.TestCase):
         renderer.light_intensity_ambient = 1.0
         renderer.light_intensity_directional = 0.0
 
-        images = renderer(vertices, faces, textures)
+        images, _, _ = renderer(vertices, faces, textures)
         images = images.detach().cpu().numpy()
         image = images[2].mean(0)
 
@@ -111,7 +111,7 @@ class TestRasterize(unittest.TestCase):
         vertices, faces, textures, grad_ref = utils.to_minibatch((vertices, faces, textures, grad_ref))
         vertices, faces, textures, grad_ref = vertices.cuda(), faces.cuda(), textures.cuda(), grad_ref.cuda()
         vertices.requires_grad = True
-        images = renderer(vertices, faces, textures)
+        images, _, _ = renderer(vertices, faces, textures)
         images = torch.mean(images, dim=1)
         loss = torch.sum(torch.abs(images[:, pyi, pxi] - 1))
         loss.backward()
@@ -148,7 +148,7 @@ class TestRasterize(unittest.TestCase):
         vertices, faces, textures, grad_ref = utils.to_minibatch((vertices, faces, textures, grad_ref))
         vertices.requires_grad=True
 
-        images = renderer(vertices, faces, textures)
+        images, _, _ = renderer(vertices, faces, textures)
         images = torch.mean(images, dim=1)
         loss = torch.sum(torch.abs(images[:, pyi, pxi]))
         loss.backward()

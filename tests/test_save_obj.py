@@ -1,6 +1,7 @@
 import unittest
 import os
 
+import torch
 import numpy as np
 
 import neural_renderer as nr
@@ -16,8 +17,8 @@ class TestCore(unittest.TestCase):
         nr.save_obj(teapot2, vertices, faces)
         vertices2, faces2 = nr.load_obj(teapot2)
         os.remove(teapot2)
-        assert np.allclose(vertices, vertices2)
-        assert np.allclose(faces, faces2)
+        assert torch.allclose(vertices, vertices2)
+        assert torch.allclose(faces, faces2)
 
     def test_texture(self):
         pass
