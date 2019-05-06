@@ -12,3 +12,4 @@ from .save_obj import save_obj
 from .vertices_to_faces import vertices_to_faces
 
 __version__ = '1.1.3'
+name = 'neural_renderer_pytorch'
