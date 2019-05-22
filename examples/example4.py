@@ -61,7 +61,7 @@ def make_reference_image(filename_ref, filename_obj):
     model.cuda()
 
     model.renderer.eye = nr.get_points_from_angles(2.732, 30, -15)
-    images = model.renderer.render(model.vertices, model.faces, torch.tanh(model.textures))
+    images, _, _ = model.renderer.render(model.vertices, model.faces, torch.tanh(model.textures))
     image = images.detach().cpu().numpy()[0]
     imsave(filename_ref, image)
 
@@ -89,7 +89,7 @@ def main():
         loss = model()
         loss.backward()
         optimizer.step()
-        images = model.renderer(model.vertices, model.faces, torch.tanh(model.textures))
+        images, _, _ = model.renderer(model.vertices, model.faces, torch.tanh(model.textures))
         image = images.detach().cpu().numpy()[0].transpose(1,2,0)
         imsave('/tmp/_tmp_%04d.png' % i, image)
         loop.set_description('Optimizing (loss %.4f)' % loss.data)
