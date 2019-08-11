@@ -10,6 +10,7 @@ import neural_renderer.cuda.load_textures as load_textures_cuda
 texture_wrapping_dict = {'REPEAT': 0, 'MIRRORED_REPEAT': 1,
                          'CLAMP_TO_EDGE': 2, 'CLAMP_TO_BORDER': 3}
 
+
 def load_mtl(filename_mtl):
     '''
     load color (Kd) and filename of textures from *.mtl
