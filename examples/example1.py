@@ -11,6 +11,7 @@ import imageio
 
 import neural_renderer as nr
 
+
 current_dir = os.path.dirname(os.path.realpath(__file__))
 data_dir = os.path.join(current_dir, 'data')
 
@@ -50,6 +51,7 @@ def main():
         image = images.detach().cpu().numpy()[0].transpose((1, 2, 0))  # [image_size, image_size, RGB]
         writer.append_data((255*image).astype(np.uint8))
     writer.close()
+
 
 if __name__ == '__main__':
     main()

@@ -50,7 +50,7 @@ class Model(nn.Module):
 
 def make_gif(filename):
     with imageio.get_writer(filename, mode='I') as writer:
-        for filename in sorted(glob.glob('/tmp/_tmp_*.png')):
+        for filename in sorted(glob.glob('./examples/tmp/_tmp_*.png')):
             writer.append_data(imread(filename))
             os.remove(filename)
     writer.close()
@@ -91,7 +91,7 @@ def main():
         optimizer.step()
         images, _, _ = model.renderer(model.vertices, model.faces, torch.tanh(model.textures))
         image = images.detach().cpu().numpy()[0].transpose(1,2,0)
-        imsave('/tmp/_tmp_%04d.png' % i, image)
+        imsave('./examples/tmp/_tmp_%04d.png' % i, image)
         loop.set_description('Optimizing (loss %.4f)' % loss.data)
         if loss.item() < 70:
             break
