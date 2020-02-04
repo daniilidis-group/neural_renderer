@@ -33,7 +33,7 @@ def look(vertices, eye, direction=[0, 1, 0], up=None):
     if direction.ndimension() == 1:
         direction = direction[None, :]
     if up.ndimension() == 1:
-        up = up[None, :]
+        up = up.repeat((direction.shape[0], 1))
 
     # create new axes
     z_axis = F.normalize(direction, eps=1e-5)
