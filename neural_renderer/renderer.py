@@ -44,7 +44,7 @@ class Renderer(nn.Module):
             self.perspective = perspective
             self.viewing_angle = viewing_angle
             self.eye = [0, 0, -(1. / math.tan(math.radians(self.viewing_angle)) + 1)]
-            self.camera_direction = [0, 0, 1]
+            self.camera_direction = camera_direction
         else:
             raise ValueError('Camera mode has to be one of projection, look or look_at')
 
@@ -57,7 +57,7 @@ class Renderer(nn.Module):
         self.light_intensity_directional = light_intensity_directional
         self.light_color_ambient = light_color_ambient
         self.light_color_directional = light_color_directional
-        self.light_direction = light_direction 
+        self.light_direction = light_direction
 
         # rasterization
         self.rasterizer_eps = 1e-3
@@ -67,7 +67,7 @@ class Renderer(nn.Module):
         Implementation of forward rendering method
         The old API is preserved for back-compatibility with the Chainer implementation
         '''
-        
+
         if mode is None:
             return self.render(vertices, faces, textures, K, R, t, dist_coeffs, orig_size)
         elif mode is 'rgb':
