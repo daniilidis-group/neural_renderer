@@ -1,22 +1,19 @@
-# Neural 3D Mesh Renderer (CVPR 2018)
+# Neural 3D Mesh Renderer
 
 This repo contains a PyTorch implementation of the paper [Neural 3D Mesh Renderer](http://hiroharu-kato.com/projects_en/neural_renderer.html) by Hiroharu Kato, Yoshitaka Ushiku, and Tatsuya Harada.
-It is a port of the [original Chainer implementation](https://github.com/hiroharu-kato/neural_renderer) released by the authors.
-Currently the API is the same as in the original implementation with some smalls additions (e.g. render using a general 3x4 camera matrix, lens distortion coefficients etc.). However it is possible that it will change in the future.
+The renderer is modified from [neural-render](https://github.com/daniilidis-group/neural_renderer) which fits for latest PyTorch with version higher than 1.6.
 
 The library is fully functional and it passes all the test cases supplied by the authors of the original library.
 Detailed documentation will be added in the near future.
-## Requirements
-Python 2.7+ and PyTorch 0.4.0.
 
-The code has been tested only with PyTorch 0.4.0, there are no guarantees that it is compatible with older versions.
-Currently the library has both Python 3 and Python 2 support.
+## Requirements
+PyTorch 1.6.0+. Currently the library has both Python 3 and Python 2 support.
 
 **Note**: In some newer PyTorch versions you might see some compilation errors involving AT_ASSERT. In these cases you can use the version of the code that is in the branch *at_assert_fix*. These changes will be merged into master in the near future.
 ## Installation
 You can install the package by running
 ```
-pip install neural_renderer_pytorch
+pip3 install neural_renderer_pytorch
 ```
 Since running install.py requires PyTorch, make sure to install PyTorch before running the above command.
 ## Running examples
