@@ -56,6 +56,22 @@ From left to right: reference image, initial state, and optimization process.
 
 ![](https://raw.githubusercontent.com/hiroharu-kato/neural_renderer/master/examples/data/example4_ref.png) ![](https://raw.githubusercontent.com/hiroharu-kato/neural_renderer/master/examples/data/example4_init.png) ![](https://raw.githubusercontent.com/hiroharu-kato/neural_renderer/master/examples/data/example4_result.gif)
 
+## Testing
+
+For development; be sure to use a `virtualenv` when you can!
+
+```sh
+# Build.
+pip install torch
+# - Be sure to set your CUDA environment variables for building the kernels!
+pip install -e .
+
+# Install test deps
+pip install scikit-image
+# Discover / run tests
+cd ./tests
+python -m unittest discover -t .
+```
 
 ## Citation
 
