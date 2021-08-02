@@ -30,9 +30,10 @@ class TestRasterizeSilhouettes(unittest.TestCase):
 
         # load reference image by blender
         ref = imread(os.path.join(data_dir, 'teapot_blender.png'))
-        ref = (ref.min(-1) != 255).astype(np.float32)
+        ref = utils.guess_foreground_mask(ref)
 
-        assert(np.allclose(ref, image))
+        iou = utils.calc_mask_iou(image.astype(bool), ref)
+        self.assertGreater(iou, 0.999)
 
     def test_backward_case1(self):
         """Backward if non-zero gradient is out of a face."""
