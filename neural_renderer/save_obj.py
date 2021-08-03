@@ -15,7 +15,7 @@ def create_texture_image(textures, texture_size_out=16):
     vertices = torch.zeros((num_faces, 3, 2), dtype=torch.float32)  # [:, :, XY]
     face_nums = torch.arange(num_faces)
     column = face_nums % tile_width
-    row = face_nums / tile_width
+    row = face_nums // tile_width
     vertices[:, 0, 0] = column * texture_size_out
     vertices[:, 0, 1] = row * texture_size_out
     vertices[:, 1, 0] = column * texture_size_out
